@@ -1,0 +1,112 @@
+/home/x86debug/textnowwrap/HTTPSMS/app/src/main/java/com/httpsms/controller/SmsController.java:59: Warning: Implicitly using the default locale is a common source of bugs: Use toLowerCase(Locale) instead. For strings meant to be internal use Locale.ROOT, otherwise Locale.getDefault(). [DefaultLocale]
+            job.msgType = type.toLowerCase();
+                               ~~~~~~~~~~~
+/home/x86debug/textnowwrap/HTTPSMS/app/src/main/java/com/httpsms/controller/SmsController.java:299: Warning: Implicitly using the default locale is a common source of bugs: Use toLowerCase(Locale) instead. For strings meant to be internal use Locale.ROOT, otherwise Locale.getDefault(). [DefaultLocale]
+                    job.msgType = type.toLowerCase();
+                                       ~~~~~~~~~~~
+
+   Explanation for issues of type "DefaultLocale":
+   Calling String#toLowerCase() or #toUpperCase() without specifying an
+   explicit locale is a common source of bugs. The reason for that is that
+   those methods will use the current locale on the user's device, and even
+   though the code appears to work correctly when you are developing the app,
+   it will fail in some locales. For example, in the Turkish locale, the
+   uppercase replacement for i is not I.
+
+   If you want the methods to just perform ASCII replacement, for example to
+   convert an enum name, call String#toUpperCase(Locale.US) instead. If you
+   really want to use the current locale, call
+   String#toUpperCase(Locale.getDefault()) instead.
+
+   https://developer.android.com/reference/java/util/Locale.html#default_locale
+
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:13: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdk 34
+        ~~~~~~~~~~~~
+
+   Explanation for issues of type "OldTargetApi":
+   When your application runs on a version of Android that is more recent than
+   your targetSdkVersion specifies that it has been tested with, various
+   compatibility modes kick in. This ensures that your application continues
+   to work, but it may look out of place. For example, if the targetSdkVersion
+   is less than 14, your app may get an option button in the UI.
+
+   To fix this issue, set the targetSdkVersion to the highest available value.
+   Then test your app to make sure everything works correctly. You may want to
+   consult the compatibility notes to see what changes apply to each version
+   you are adding support for:
+   https://developer.android.com/reference/android/os/Build.VERSION_CODES.html
+   as well as follow this guide:
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.
+   html
+
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.html
+
+/home/x86debug/textnowwrap/HTTPSMS/app/src/main/java/com/httpsms/service/BootJobService.java:8: Warning: Specify a valid range of job id's for WorkManager to use. [SpecifyJobSchedulerIdRange from androidx.work]
+public class BootJobService extends JobService {
+             ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "SpecifyJobSchedulerIdRange":
+   When using JobScheduler APIs directly, WorkManager requires that developers
+   specify a range of JobScheduler ids that are safe for WorkManager to use so
+   the `id`s do not collide. 
+   For more information look at
+   androidx.work.Configuration.Builder.setJobSchedulerJobIdRange(int, int).
+
+   Vendor: Android Open Source Project
+   Identifier: androidx.work
+   Feedback: https://issuetracker.google.com/issues/new?component=409906
+
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:32: Warning: A newer version of androidx.work:work-runtime than 2.9.0 is available: 2.11.2 [GradleDependency]
+ implementation "androidx.work:work-runtime:2.9.0"
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:34: Warning: A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1 [GradleDependency]
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:35: Warning: A newer version of com.google.android.material:material than 1.11.0 is available: 1.14.0 [GradleDependency]
+    implementation 'com.google.android.material:material:1.11.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:42: Warning: A newer version of androidx.room:room-runtime than 2.6.1 is available: 2.8.4 [GradleDependency]
+    implementation 'androidx.room:room-runtime:2.6.1'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/x86debug/textnowwrap/HTTPSMS/app/build.gradle:43: Warning: A newer version of androidx.room:room-compiler than 2.6.1 is available: 2.8.4 [GradleDependency]
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "GradleDependency":
+   This detector looks for usages of libraries where the version you are using
+   is not the current stable release. Using older versions is fine, and there
+   are cases where you deliberately want to stick with an older version.
+   However, you may simply not be aware that a more recent version is
+   available, and that is what this lint check helps find.
+
+/home/x86debug/textnowwrap/HTTPSMS/app/src/main/AndroidManifest.xml:37: Warning: BroadcastReceivers that declare an intent-filter for SMS_DELIVER or SMS_RECEIVED must ensure that the caller has the BROADCAST_SMS permission, otherwise it is possible for malicious actors to spoof intents [UnprotectedSMSBroadcastReceiver]
+  <receiver
+   ~~~~~~~~
+
+   Explanation for issues of type "UnprotectedSMSBroadcastReceiver":
+   BroadcastReceivers that declare an intent-filter for SMS_DELIVER or
+   SMS_RECEIVED must ensure that the caller has the BROADCAST_SMS permission,
+   otherwise it is possible for malicious actors to spoof intents.
+
+   https://goo.gle/UnprotectedSMSBroadcastReceiver
+
+/home/x86debug/textnowwrap/HTTPSMS/app/src/main/java/com/httpsms/App.java:7: Warning: Do not place Android context classes in static fields; this is a memory leak [StaticFieldLeak]
+    private static Context context;
+            ~~~~~~
+
+   Explanation for issues of type "StaticFieldLeak":
+   A static field will leak contexts.
+
+   Non-static inner classes have an implicit reference to their outer class.
+   If that outer class is for example a Fragment or Activity, then this
+   reference means that the long-running handler/loader/task will hold a
+   reference to the activity which prevents it from getting garbage
+   collected.
+
+   Similarly, direct field references to activities and fragments from these
+   longer running instances can cause leaks.
+
+   ViewModel classes should never point to Views or non-application Contexts.
+
+0 errors, 11 warnings

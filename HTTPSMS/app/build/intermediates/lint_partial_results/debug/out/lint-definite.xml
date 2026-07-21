@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.2.2" type="incidents">
+
+    <incident
+        id="UnprotectedSMSBroadcastReceiver"
+        severity="warning"
+        message="BroadcastReceivers that declare an intent-filter for `SMS_DELIVER` or `SMS_RECEIVED` must ensure that the caller has the `BROADCAST_SMS` permission, otherwise it is possible for malicious actors to spoof intents">
+        <fix-attribute
+            description="Set permission=&quot;android.permission.BROADCAST_SMS&quot;"
+            namespace="http://schemas.android.com/apk/res/android"
+            attribute="permission"
+            value="android.permission.BROADCAST_SMS"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*manifest*0}"
+            line="37"
+            column="4"
+            startOffset="1618"
+            endLine="37"
+            endColumn="12"
+            endOffset="1626"/>
+    </incident>
+
+    <incident
+        id="StaticFieldLeak"
+        severity="warning"
+        message="Do not place Android context classes in static fields; this is a memory leak">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/httpsms/App.java"
+            line="7"
+            column="13"
+            startOffset="138"
+            endLine="7"
+            endColumn="19"
+            endOffset="144"/>
+    </incident>
+
+    <incident
+        id="DefaultLocale"
+        severity="warning"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/httpsms/controller/SmsController.java"
+            line="59"
+            column="32"
+            startOffset="1938"
+            endLine="59"
+            endColumn="43"
+            endOffset="1949"/>
+    </incident>
+
+    <incident
+        id="DefaultLocale"
+        severity="warning"
+        message="Implicitly using the default locale is a common source of bugs: Use `toLowerCase(Locale)` instead. For strings meant to be internal use `Locale.ROOT`, otherwise `Locale.getDefault()`.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/httpsms/controller/SmsController.java"
+            line="299"
+            column="40"
+            startOffset="11249"
+            endLine="299"
+            endColumn="51"
+            endOffset="11260"/>
+    </incident>
+
+    <incident
+        id="OldTargetApi"
+        severity="warning"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details.">
+        <fix-replace
+            description="Update targetSdkVersion to 36"
+            oldString="34"
+            replacement="36"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="13"
+            column="9"
+            startOffset="219"
+            endLine="13"
+            endColumn="21"
+            endOffset="231"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.work:work-runtime than 2.9.0 is available: 2.11.2">
+        <fix-replace
+            description="Change to 2.11.2"
+            family="Update versions"
+            oldString="2.9.0"
+            replacement="2.11.2"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="32"
+            column="17"
+            startOffset="641"
+            endLine="32"
+            endColumn="51"
+            endOffset="675"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1">
+        <fix-replace
+            description="Change to 1.7.1"
+            family="Update versions"
+            oldString="1.6.1"
+            replacement="1.7.1"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="34"
+            column="20"
+            startOffset="697"
+            endLine="34"
+            endColumn="56"
+            endOffset="733"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of com.google.android.material:material than 1.11.0 is available: 1.14.0">
+        <fix-replace
+            description="Change to 1.14.0"
+            family="Update versions"
+            oldString="1.11.0"
+            replacement="1.14.0"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="35"
+            column="20"
+            startOffset="753"
+            endLine="35"
+            endColumn="65"
+            endOffset="798"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.room:room-runtime than 2.6.1 is available: 2.8.4">
+        <fix-replace
+            description="Change to 2.8.4"
+            family="Update versions"
+            oldString="2.6.1"
+            replacement="2.8.4"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="42"
+            column="20"
+            startOffset="996"
+            endLine="42"
+            endColumn="54"
+            endOffset="1030"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.room:room-compiler than 2.6.1 is available: 2.8.4">
+        <fix-replace
+            description="Change to 2.8.4"
+            family="Update versions"
+            oldString="2.6.1"
+            replacement="2.8.4"/>
+        <location
+            file="${:app*projectDir}/build.gradle"
+            line="43"
+            column="25"
+            startOffset="1055"
+            endLine="43"
+            endColumn="60"
+            endOffset="1090"/>
+    </incident>
+
+    <incident
+        id="SpecifyJobSchedulerIdRange"
+        severity="warning"
+        message="Specify a valid range of job id&apos;s for `WorkManager` to use.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/httpsms/service/BootJobService.java"
+            line="8"
+            column="14"
+            startOffset="173"
+            endLine="8"
+            endColumn="28"
+            endOffset="187"/>
+    </incident>
+
+</incidents>

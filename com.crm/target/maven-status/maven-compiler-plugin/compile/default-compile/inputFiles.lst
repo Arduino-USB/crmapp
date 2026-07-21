@@ -1,0 +1,14 @@
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/App.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/CmdExec.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/ConnectionLoop.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/DentrixSync.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/FileCheckSum.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/HTTPWrapper.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/NetworkMgr.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/PortScanner.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/controllers/MainController.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/controllers/UserApiController.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/entites/Appointment.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/entites/User.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/repos/AppointmentRepo.java
+/home/x86debug/textnowwrap/com.crm/src/main/java/com/crm/repos/UserRepo.java
