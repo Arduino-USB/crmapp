@@ -5,9 +5,8 @@ import com.crm.entites.User;
 import com.crm.repos.AppointmentRepo;
 import com.crm.entites.Appointment;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Component;
 
@@ -19,8 +18,6 @@ import java.util.Map;
 import java.util.Locale;                        
 import java.io.File;                             
 import java.nio.file.*;
-import java.io.StringReader
-import java.io.Reader;
 import java.time.*;
 import java.time.format.DateTimeFormatter;       
 
@@ -28,211 +25,137 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class AppointmentSync {
 	
-	private static boolean instance_created = false;
 	
 	private UserRepo userRepo;
 	private AppointmentRepo appointmentRepo;
 	private int daysAhead = 10;	
-	
-	private ArrayList<FileData> fileCheckSums = new ArrayList<>();	
-	
-	public class FileData {
-		Path filepath;
-		Long checksum;		
-	}
-	
-	public static class CsvTableMap {
-		static final String id = "c1";
-		static final String name = "c2";
-		static final String time = "c3";
-		static final String amount = "c4";
-		static final String prefName = "c5";
-		static final String reason = "c6";
-		static final String phone = "c7";
-	}
 
+	private void parseJsonToDb(String jsonData, LocalDate currentDate) {
 
-    private void parseCsvToDb(String csvData, LocalDate currentDate) {
-        CsvMapper csvMapper = new CsvMapper();
+		ObjectMapper mapper = new ObjectMapper();
 
-        CsvSchema schema = CsvSchema.builder()
-                .addColumn("c0")
-                .addColumn("c1")
-                .addColumn("c2")
-                .addColumn("c3")
-                .addColumn("c4")
-                .addColumn("c5")
-                .addColumn("c6")
-                .addColumn("c7")
-                .setColumnSeparator('\t')
-                .build();
+		try {
 
-        try (Reader input = new StringReader(csvData)) {
+		    List<Map<String, String>> rows = mapper.readValue(
+		            jsonData,
+		            new TypeReference<List<Map<String, String>>>() {}
+		    );
 
-			MappingIterator<Map<String, String>> iterator = csvMapper
-					.readerFor(Map.class)
-					.with(schema)
-					.readValues(input);
+		    for (Map<String, String> row : rows) {
 
-			List<Map<String, String>> rows = new ArrayList<>();
+		        System.out.println("[AppointmentSync] Row data: " + row);
 
-			while (iterator.hasNext()) {
+		        long userId = Long.parseLong(row.get("Chart #"));
 
-				Map<String, String> row = iterator.next();
+		        Optional<User> user = userRepo.findById(userId);
 
-				rows.add(row);
+		        if (!user.isPresent()) {
 
-				System.out.println("[AppointmentSync] Row data: " + row);
+		            System.out.println("[AppointmentSync] Adding user '"
+		                    + row.get("Name")
+		                    + "' to database");
 
-				// Skip blank rows
-				boolean blank = true;
-				for (String value : row.values()) {
-					if (value != null && !value.trim().isEmpty()) {
-						blank = false;
-						break;
-					}
-				}
+		            User newUser = new User();
 
-				if (blank)
-					continue;
+		            newUser.setId(userId);
+		            newUser.setName(row.get("Name"));
+		            newUser.setPrefName(row.get("Pref Name"));
+		            newUser.setPhone(row.get("Mobile Phone"));
 
-				long userId = Long.parseLong(row.get(CsvTableMap.id));
+		            userRepo.save(newUser);
+		        }
 
-				Optional<User> user = userRepo.findById(userId);
+		        LocalTime localTime = LocalTime.parse(
+		                row.get("Time"),
+		                DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+		        );
 
-				if (!user.isPresent()) {
+		        Instant timeInstant = LocalDateTime
+		                .of(currentDate, localTime)
+		                .atZone(ZoneId.systemDefault())
+		                .toInstant();
 
-					System.out.println("[AppointmentSync] Adding user '"
-							+ row.get(CsvTableMap.name)
-							+ "' to database");
+		        Optional<Appointment> existingAppointment =
+		                appointmentRepo.findByUserIdAndTime(userId, timeInstant);
 
-					User newUser = new User();
+		        if (!existingAppointment.isPresent()) {
 
-					newUser.setId(userId);
-					newUser.setName(row.get(CsvTableMap.name));
-					newUser.setPrefName(row.get(CsvTableMap.prefName));
-					newUser.setPhone(row.get(CsvTableMap.phone));
+		            System.out.println("[AppointmentSync] Adding appointment"
+		                    + "\n\tfor user '" + row.get("Name") + "'"
+		                    + "\n\tat time '" + row.get("Time") + "'"
+		                    + "\n\tfor reason '" + row.get("Reason") + "'"
+		            );
 
-					userRepo.save(newUser);
-				}
+		            Appointment newAppointment = new Appointment();
 
-				LocalTime localTime = LocalTime.parse(
-						row.get(CsvTableMap.time),
-						DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
-				);
+		            newAppointment.setUserId(userId);
+		            newAppointment.setTime(timeInstant);
+		            newAppointment.setReason(row.get("Reason"));
+		            newAppointment.setJsonStatus(true);
 
-				Instant timeInstant = LocalDateTime
-						.of(currentDate, localTime)
-						.atZone(ZoneId.systemDefault())
-						.toInstant();
+		            appointmentRepo.save(newAppointment);
+		        }
+		    }
 
-				Optional<Appointment> existingAppointment =
-						appointmentRepo.findByUserIdAndTime(userId, timeInstant);
+		    // Remove appointments that no longer exist in the JSON
 
-				if (!existingAppointment.isPresent()) {
+		    List<Appointment> appointments = appointmentRepo.findByDay(currentDate);
 
-					System.out.println("[AppointmentSync] Adding appointment"
-							+ "\n\tfor user '" + row.get(CsvTableMap.name) + "'"
-							+ "\n\tat time '" + row.get(CsvTableMap.time) + "'"
-							+ "\n\tfor reason '" + row.get(CsvTableMap.reason) + "'"
-					);
+		    for (Appointment dbAppointment : appointments) {
 
-					Appointment newAppointment = new Appointment();
+		        if (!dbAppointment.fromJson())
+		            continue;
 
-					newAppointment.setUserId(userId);
-					newAppointment.setTime(timeInstant);
-					newAppointment.setReason(row.get(CsvTableMap.reason));
-					newAppointment.setCsvStatus(true);
+		        boolean found = false;
 
-					appointmentRepo.save(newAppointment);
-				}
-			}
+		        for (Map<String, String> row : rows) {
 
-			// Remove appointments that no longer exist in the CSV
-			List<Appointment> appointments = appointmentRepo.findByDay(currentDate);
+		            long userId = Long.parseLong(row.get("Chart #"));
 
-			for (Appointment dbAppointment : appointments) {
+		            LocalTime localTime = LocalTime.parse(
+		                    row.get("Time"),
+		                    DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+		            );
 
-				if (!dbAppointment.fromCsvFile())
-					continue;
+		            Instant timeInstant = LocalDateTime
+		                    .of(currentDate, localTime)
+		                    .atZone(ZoneId.systemDefault())
+		                    .toInstant();
 
-				boolean found = false;
+		            if (dbAppointment.getUserId() == userId
+		                    && dbAppointment.getTime().equals(timeInstant)
+		                    && dbAppointment.getReason().equals(row.get("Reason"))) {
 
-				for (Map<String, String> csvRow : rows) {
+		                found = true;
+		                break;
+		            }
+		        }
 
-					// Skip blank rows
-					boolean blank = true;
-					for (String value : csvRow.values()) {
-						if (value != null && !value.trim().isEmpty()) {
-							blank = false;
-							break;
-						}
-					}
+		        if (!found) {
 
-					if (blank)
-						continue;
+		            System.out.println("[AppointmentSync] Removing cancelled appointment for user "
+		                    + dbAppointment.getUserId());
 
-					long csvUserId = Long.parseLong(csvRow.get(CsvTableMap.id));
+		            appointmentRepo.delete(dbAppointment);
 
-					LocalTime csvLocalTime = LocalTime.parse(
-							csvRow.get(CsvTableMap.time),
-							DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
-					);
-
-					Instant csvTimeInstant = LocalDateTime
-							.of(currentDate, csvLocalTime)
-							.atZone(ZoneId.systemDefault())
-							.toInstant();
-
-					String csvReason = csvRow.get(CsvTableMap.reason);
-
-					if (dbAppointment.getUserId() == csvUserId
-							&& dbAppointment.getTime().equals(csvTimeInstant)
-							&& dbAppointment.getReason().equals(csvReason)) {
-
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					System.out.println("[AppointmentSync] Removing cancelled appointment for user "
-							+ dbAppointment.getUserId());
-
-					appointmentRepo.delete(dbAppointment);
-				}
-			}
+		        }
+		    }
 
 		} catch (Exception e) {
 
-			System.out.println("[AppointmentSync] Error parsing csv string '"
-					+ csvFile + "'");
+		    System.out.println("[AppointmentSync] Error parsing schedule JSON");
 
-			e.printStackTrace();
+		    e.printStackTrace();
+
 		}
 	}
 
-	private Long getStoredCheckSum(Path csvFile) {
-		for (int i = 0; i < fileCheckSums.size(); i++) {
-			if (fileCheckSums.get(i).filepath.equals(csvFile)) {
-				return fileCheckSums.get(i).checksum;
-			}						
-		}
-		
-		return null;
-			
-	}
 
 	public AppointmentSync(UserRepo userRepo, AppointmentRepo appointmentRepo) {
-		if (instance_created) {
-			System.out.println("[AppointmentSync] the AppointmentSync module is meant to only have one instance and then be used as a static utility");
-			return;
-		} else {
-			instance_created = true;
-			this.userRepo = userRepo;
-			this.appointmentRepo = appointmentRepo;
-		}
-		
+
+		this.userRepo = userRepo;
+		this.appointmentRepo = appointmentRepo;
+			
 		new Thread(() -> {
 			System.out.println("[AppointmentSync] Starting Dentrix schedule sync");
 			
@@ -249,35 +172,25 @@ public class AppointmentSync {
 						System.out.println("[AppointmentSync] Sleep error, " + e);					
 					}
 					
-										
-					if(!Files.exists(csvFolder.resolve("getSchedule.exe"))) {
-						System.out.println("[AppointmentSync].Error getSchedule.exe not found in '" + csvFolder.toString() + "'");	
-						return;					
-					}									
-	
-					DentrixAction.ResultData getScheduleAction = DentrixAction.queue("getSchedule", currentDateFormatted);
-					int returnCode = DentrixAction.returnCode;
+					DentrixAction.ReturnData getScheduleAction = DentrixAction.run("getSchedule", currentDateFormatted);
+					int returnCode = getScheduleAction.returnCode;
 					
 
 					if (returnCode == -1) {
-						System.out.println("[AppointmentSync] DentrixAction ran into an issue, " + e);			
+						System.out.println("[AppointmentSync] DentrixAction ran into an issue, " + getScheduleAction.stderr);			
 
 					} else if (returnCode == 0) {
-						String csvFileName = currentDate.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")) + ".csv";
-						Path csvFile = csvFolder.resolve(csvFileName);
-
-						
 						
 						if (!getScheduleAction.stdout.equals("")) {
 							System.out.println("[AppointmentSync] Parsing getSchedule stdout");
-							parseCsvToDb(getScheduleAction.stdout, currentDate);
+							parseJsonToDb(getScheduleAction.stdout, currentDate);
 						} else {
 							System.out.println("[AppointmentSync].Error For some reason getSchedule helper didnt send stdout data even though it returned 0");
 						}
 					} else if (returnCode == 10) {
 						System.out.println("[AppointmentSync] It seems as the day, '" + currentDate.toString() + "' has no active schedule");
 					} else {
-						System.out.println("[AppointmentSync].Error getSchedule.exe failed with code " + returnCode);				
+						System.out.println("[AppointmentSync].Error getSchedule failed with code " + returnCode);				
 					}
 					
 				}

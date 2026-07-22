@@ -1,6 +1,5 @@
 package com.crm;
 
-import com.crm.DentrixSync;
 import com.crm.NetworkMgr;
 import com.crm.ConnectionLoop;
 

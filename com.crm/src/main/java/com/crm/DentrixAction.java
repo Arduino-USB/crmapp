@@ -24,7 +24,7 @@ public class DentrixAction {
      * @param scriptAndArgs The script filename followed by any optional arguments.
      * @return ReturnData containing return code (0 = success), stdout, and stderr.
      */
-    public static synchronized ReturnData queue(String... scriptAndArgs) {
+    public static synchronized ReturnData run(String... scriptAndArgs) {
         ReturnData result = new ReturnData();
 
         if (scriptAndArgs == null || scriptAndArgs.length == 0) {
