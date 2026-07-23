@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.List;
 
 @Repository
-public interface ReminderRepo extends JpaRepository<Reminder, Integer> {
+public interface ReminderRepo extends JpaRepository<Reminder, Long> {
 
 	List<Reminder> findAll();    
 	Optional<Reminder> findByDayMileStone(int dayMileStone);

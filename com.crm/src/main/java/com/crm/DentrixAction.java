@@ -45,8 +45,6 @@ public class DentrixAction {
 
             // Assemble full command array: "cmd", "/c", scriptPath, arg1, arg2...
             List<String> commandList = new ArrayList<>();
-            commandList.add("cmd");
-            commandList.add("/c");
             commandList.add(scriptPath.toString() + ".exe");
 
             // Append any additional arguments provided after the script name

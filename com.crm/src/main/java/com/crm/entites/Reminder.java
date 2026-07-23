@@ -1,36 +1,62 @@
 package com.crm.entites;
 
-import jakarta.validation.constraints.*;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 
-
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "reminders") 
+@Table(name = "reminders")
 public class Reminder {
 
-    @Id
+	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	public Long id;
+	private Long id;
 
 	@NotNull
-    private int dayMileStone;
-    
-	@NotBlank(message = "Name cannot be empty")
-    private String name;
+	private int dayMileStone;
 
-	@NotBlank(message = "Reminder cannot be empty")
+	@Column(length = 4096)
 	private String reminder;
 
-	public int getDayMileStone() { return dayMileStone; }
-	public void setDayMileStone(int dayMileStone) { this.dayMileStone = dayMileStone; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-	public String getReminder() { return reminder; }
-    public void setReminder(String reminder) { this.reminder = reminder; }
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<Long> responseIds = new ArrayList<>();
 
 
+	public Long getId() {
+		return id;
+	}
 
+	public int getDayMileStone() {
+		return dayMileStone;
+	}
+
+	public void setDayMileStone(int dayMileStone) {
+		this.dayMileStone = dayMileStone;
+	}
+
+	public String getReminder() {
+		return reminder;
+	}
+
+	public void setReminder(String reminder) {
+		this.reminder = reminder;
+	}
+
+	public List<Long> getResponseIds() {
+		return responseIds;
+	}
+
+	public void setResponseIds(List<Long> responseIds) {
+		this.responseIds = responseIds;
+	}
+
+	public void addResponseId(Long responseId) {
+		responseIds.add(responseId);
+	}
+
+	public void removeResponseId(Long responseId) {
+		responseIds.remove(responseId);
+	}
 }

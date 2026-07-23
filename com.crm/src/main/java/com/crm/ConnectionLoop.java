@@ -35,11 +35,11 @@ public class ConnectionLoop {
 				}	
 			
 				if (!connected) {
-					System.out.println("[ConnectionLoop] Searching for server");
+					//System.out.println("[ConnectionLoop] Searching for server");
 					ArrayList<String> potential_servers = port_scanner.scan_network(port);
 					
 					if (potential_servers.size() == 0 ) {
-						System.out.println("[ConnectionLoop] No servers found, trying again");
+						//System.out.println("[ConnectionLoop] No servers found, trying again");
 						continue;
 					} else if (potential_servers.size() > 1) {
 						System.out.println("[ConnectionLoop] There is more than one server, waiting for there to only be one");

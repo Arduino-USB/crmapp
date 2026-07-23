@@ -23,7 +23,7 @@ public class PortScanner {
 		
 
 		String ip_part = ip.substring(0, ip.lastIndexOf(".") + 1);
-		System.out.println("[PortScanner] Scanning " + total_ips + " ips on type " + ip_part + "X for open port " + port);
+		//System.out.println("[PortScanner] Scanning " + total_ips + " ips on type " + ip_part + "X for open port " + port);
 		
 		for (int i = 0; i < total_ips; i++) {
 			String current_ip = ip_part + i;
