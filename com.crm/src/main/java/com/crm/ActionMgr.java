@@ -19,18 +19,18 @@ public class ActionMgr {
 
         switch (action) {
             case CONFIRM_APPOINTMENT:
-                //appointment.setConfirmed(true);
-                //appointmentRepo.save(appointment);
+                appointment.setConfirmed(true);
+                appointmentRepo.save(appointment);
                 break;
 
             case CANCEL_APPOINTMENT:
-                //appointment.setCancelled(true);
-                //appointmentRepo.save(appointment);
+                appointment.setCancelled(true);
+                appointmentRepo.save(appointment);
                 break;
 
             case STOP_TEXTING:
-                //appointment.setStopTexting(true);
-                //appointmentRepo.save(appointment);
+                appointment.setStopTexting(true);
+                appointmentRepo.save(appointment);
                 break;
 
             case NONE:
@@ -44,18 +44,18 @@ public class ActionMgr {
 
         switch (action) {
             case CONFIRM_APPOINTMENT:
-                //appointment.setConfirmed(false);
-                //appointmentRepo.save(appointment);
+                appointment.setConfirmed(false);
+                appointmentRepo.save(appointment);
                 break;
 
             case CANCEL_APPOINTMENT:
-                //appointment.setCancelled(false);
-                //appointmentRepo.save(appointment);
+                appointment.setCancelled(false);
+                appointmentRepo.save(appointment);
                 break;
 
             case STOP_TEXTING:
-                //appointment.setStopTexting(false);
-                //appointmentRepo.save(appointment);
+                appointment.setStopTexting(false);
+                appointmentRepo.save(appointment);
                 break;
 
             case NONE:

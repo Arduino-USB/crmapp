@@ -80,6 +80,12 @@ public class AutomatedTextMgr {
 
         // === 2. Send automated messages ===
         for (Appointment appointment : appointments) {
+            // Respect STOP_TEXTING flag for scheduled outgoing reminders
+            if (appointment.isStopTexting()) {
+                System.out.println("[AutomatedTextMgr] Appt ID " + appointment.getId() + " has stopTexting=true. Skipping outgoing reminders.");
+                continue;
+            }
+
             Instant apptTime = appointment.getTime();
             if (apptTime == null) {
                 System.out.println("[AutomatedTextMgr] Appt ID " + appointment.getId() + " has NULL time. Skipping.");
@@ -161,7 +167,7 @@ public class AutomatedTextMgr {
         }
     }
 
-	private void handleCustomerReply(Appointment appointment, User user) {
+    private void handleCustomerReply(Appointment appointment, User user) {
         Long currentTextId = appointment.getCurrentTextId();
         if (currentTextId == null) {
             return;
@@ -198,7 +204,7 @@ public class AutomatedTextMgr {
             ResponseAction newAction = response.getAction();
             ResponseAction previousAction = lastExecutedActions.get(appointment.getId());
 
-            // Check if we already executed an action for this appointment session
+            // Check if an action was already executed for this appointment session (Update branch)
             if (previousAction != null) {
                 if (previousAction != newAction) {
                     System.out.println("[AutomatedTextMgr] UPDATING REPLY FOR APPT " + appointment.getId() 
@@ -213,27 +219,32 @@ public class AutomatedTextMgr {
                     // 3. Update tracked state
                     lastExecutedActions.put(appointment.getId(), newAction);
 
-                    // 4. Send updated response text
+                    // 4. Send notification text back to user
                     String changeText = "Response changed for " + previousAction + " to " + newAction;
                     Long newTextId = textMgr.sendText(user.getPhone(), changeText);
 
                     appointment.setCurrentTextId(newTextId);
+                    
+                    // Save mutated state (stopTexting, isConfirmed, isCancelled, currentTextId)
                     appointmentRepo.save(appointment);
                 }
-                return; // Reply matched and processed as update (or same action), exit loop
+                return;
             }
 
-            // First time replying to this prompt
+            // Initial response branch
             System.out.println("[AutomatedTextMgr] MATCHED INITIAL RESPONSE: " + response.getText());
 
             Long newTextId = textMgr.sendText(user.getPhone(), response.getResponse());
 
             appointment.setCurrentTextId(newTextId);
             appointment.setWaitingForResponse(false);
-            appointmentRepo.save(appointment);
 
+            // Execute action (e.g. STOP_TEXTING sets stopTexting = true)
             actionMgr.doAction(newAction, appointment);
             lastExecutedActions.put(appointment.getId(), newAction);
+
+            // Save mutated entity to database so stopTexting persists
+            appointmentRepo.save(appointment);
             return;
         }
     }

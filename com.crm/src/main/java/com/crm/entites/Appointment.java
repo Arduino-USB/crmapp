@@ -11,134 +11,149 @@ import java.util.ArrayList;
 @Table(name = "appointments")
 public class Appointment {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @NotNull(message = "User id cannot be empty")
+    private Long userId;
 
+    @NotNull(message = "Time cannot be empty")
+    private Instant time;
 
-	@NotNull(message = "User id cannot be empty")
-	private Long userId;
+    private boolean fromJson = false;
 
+    private Long currentReminderId;
 
-	@NotNull(message = "Time cannot be empty")
-	private Instant time;
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean waitingForResponse = true;
 
+	@Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isConfirmed = false;
 
-	private boolean fromJson = false;
+	@Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isCancelled = false;
 
-	private Long currentReminderId;
+	@Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean stopTexting = false;
 
-	@Column(nullable = false, columnDefinition = "boolean default true")
-	private boolean waitingForResponse = true;
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<Integer> mileStoneList = new ArrayList<>();
 
+    private Instant lastTextSent;
 
-	@ElementCollection(fetch = FetchType.EAGER)
-	private List<Integer> mileStoneList = new ArrayList<>();
+    private Long currentTextId;
 
+    private String reason = "";
 
-	private Instant lastTextSent;
+    // Getters and Setters
 
-	private Long currentTextId;
+    public Long getId() {
+        return id;
+    }
 
-	private String reason = "";
+    public Long getCurrentTextId() {
+        return currentTextId;
+    }
 
+    public void setCurrentTextId(Long currentTextId) {
+        this.currentTextId = currentTextId;
+    }
 
-	public Long getId() {
-		return id;
-	}
+    public Long getUserId() {
+        return userId;
+    }
 
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
 
-	public Long getCurrentTextId() {
-		return currentTextId;
-	}
+    public Instant getTime() {
+        return time;
+    }
 
-	public void setCurrentTextId(Long currentTextId) {
-		this.currentTextId = currentTextId;
-	}
+    public void setTime(Instant time) {
+        this.time = time;
+    }
 
+    public Instant getLastTextSent() {
+        return lastTextSent;
+    }
 
-	public Long getUserId() {
-		return userId;
-	}
+    public void setTextSentNow() {
+        this.lastTextSent = Instant.now();
+    }
 
-	public void setUserId(Long userId) {
-		this.userId = userId;
-	}
+    public String getReason() {
+        return reason;
+    }
 
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
 
-	public Instant getTime() {
-		return time;
-	}
+    public List<Integer> getMileStoneList() {
+        return mileStoneList;
+    }
 
-	public void setTime(Instant time) {
-		this.time = time;
-	}
+    public void addMileStoneToList(int milestone) {
+        if (mileStoneList == null) {
+            mileStoneList = new ArrayList<>();
+        }
+        mileStoneList.add(milestone);
+    }
 
+    public void removeMileStoneFromList(int milestone) {
+        if (mileStoneList != null) {
+            mileStoneList.removeIf(m -> m.equals(milestone));
+        }
+    }
 
-	public Instant getLastTextSent() {
-		return lastTextSent;
-	}
+    public boolean fromJson() {
+        return fromJson;
+    }
 
-	public void setTextSentNow() {
-		this.lastTextSent = Instant.now();
-	}
+    public void setJsonStatus(boolean fromJson) {
+        this.fromJson = fromJson;
+    }
 
+    public boolean isWaitingForResponse() {
+        return waitingForResponse;
+    }
 
-	public String getReason() {
-		return reason;
-	}
+    public void setWaitingForResponse(boolean waitingForResponse) {
+        this.waitingForResponse = waitingForResponse;
+    }
 
-	public void setReason(String reason) {
-		this.reason = reason;
-	}
+    public Long getCurrentReminderId() {
+        return currentReminderId;
+    }
 
+    public void setCurrentReminderId(Long currentReminderId) {
+        this.currentReminderId = currentReminderId;
+    }
 
-	public List<Integer> getMileStoneList() {
-		return mileStoneList;
-	}
+    public boolean isConfirmed() {
+        return isConfirmed;
+    }
 
+    public void setConfirmed(boolean confirmed) {
+        isConfirmed = confirmed;
+    }
 
-	public void addMileStoneToList(int milestone) {
-		if (mileStoneList == null) {
-			mileStoneList = new ArrayList<>();
-		}
+    public boolean isCancelled() {
+        return isCancelled;
+    }
 
-		mileStoneList.add(milestone);
-	}
+    public void setCancelled(boolean cancelled) {
+        isCancelled = cancelled;
+    }
 
+    public boolean isStopTexting() {
+        return stopTexting;
+    }
 
-	public void removeMileStoneFromList(int milestone) {
-		if (mileStoneList != null) {
-			mileStoneList.removeIf(m -> m.equals(milestone));
-		}
-	}
-
-
-	public boolean fromJson() {
-		return fromJson;
-	}
-
-	public void setJsonStatus(boolean fromJson) {
-		this.fromJson = fromJson;
-	}
-
-
-	public boolean isWaitingForResponse() {
-		return waitingForResponse;
-	}
-
-	public void setWaitingForResponse(boolean waitingForResponse) {
-		this.waitingForResponse = waitingForResponse;
-	}
-
-
-	public Long getCurrentReminderId() {
-		return currentReminderId;
-	}
-
-	public void setCurrentReminderId(Long currentReminderId) {
-		this.currentReminderId = currentReminderId;
-	}
-
+    public void setStopTexting(boolean stopTexting) {
+        this.stopTexting = stopTexting;
+    }
 }
