@@ -3,43 +3,64 @@ package com.crm;
 import com.crm.entites.Appointment;
 import com.crm.enums.ResponseAction;
 import com.crm.repos.AppointmentRepo;
-
 import org.springframework.stereotype.Component;
 
 @Component
 public class ActionMgr {
 
-	private AppointmentRepo appointmentRepo;
+    private final AppointmentRepo appointmentRepo;
 
-	public ActionMgr(
-			AppointmentRepo appointmentRepo) {
+    public ActionMgr(AppointmentRepo appointmentRepo) {
+        this.appointmentRepo = appointmentRepo;
+    }
 
-		this.appointmentRepo = appointmentRepo;
-	}
+    public void doAction(ResponseAction action, Appointment appointment) {
+        if (action == null) return;
 
-	public void doAction(
-			ResponseAction action,
-			Appointment appointment) {
+        switch (action) {
+            case CONFIRM_APPOINTMENT:
+                //appointment.setConfirmed(true);
+                //appointmentRepo.save(appointment);
+                break;
 
-		switch (action) {
+            case CANCEL_APPOINTMENT:
+                //appointment.setCancelled(true);
+                //appointmentRepo.save(appointment);
+                break;
 
-		case NONE:
-			break;
+            case STOP_TEXTING:
+                //appointment.setStopTexting(true);
+                //appointmentRepo.save(appointment);
+                break;
 
-		case CONFIRM_APPOINTMENT:
-			//appointment.setConfirmed(true);
-			//appointmentRepo.save(appointment);
-			break;
+            case NONE:
+            default:
+                break;
+        }
+    }
 
-		case CANCEL_APPOINTMENT:
-			//appointment.setCancelled(true);
-			//appointmentRepo.save(appointment);
-			break;
+    public void undoAction(ResponseAction action, Appointment appointment) {
+        if (action == null) return;
 
-		case STOP_TEXTING:
-			//appointment.setStopTexting(true);
-			//appointmentRepo.save(appointment);
-			break;
-		}
-	}
+        switch (action) {
+            case CONFIRM_APPOINTMENT:
+                //appointment.setConfirmed(false);
+                //appointmentRepo.save(appointment);
+                break;
+
+            case CANCEL_APPOINTMENT:
+                //appointment.setCancelled(false);
+                //appointmentRepo.save(appointment);
+                break;
+
+            case STOP_TEXTING:
+                //appointment.setStopTexting(false);
+                //appointmentRepo.save(appointment);
+                break;
+
+            case NONE:
+            default:
+                break;
+        }
+    }
 }
