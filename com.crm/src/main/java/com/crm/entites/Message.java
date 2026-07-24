@@ -1,5 +1,7 @@
 package com.crm.entites;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -23,6 +25,7 @@ public class Message {
 
     private int dayMileStone;
 
+	@JsonProperty("isBefore")
     private boolean isBefore; // true = x days before, false = x days after
 
     @ElementCollection(fetch = FetchType.EAGER)

@@ -1,0 +1,310 @@
+Here is the complete documentation of all `GET` and `POST` API requests for your controllers, using your exact base paths, route mappings, and entity schemas.
+
+---
+
+## 1. Appointment Controller (`/api/appointments`)
+
+Base Path: `/api/appointments`
+
+### **GET Requests**
+
+#### Fetch Appointment(s)
+
+* **Endpoint:** `GET /api/appointments`
+* **Query Parameters:**
+* `id` *(optional)*: `Long` — If provided, returns a single appointment matching the ID.
+* `page` *(optional, default: 0)*: `int` — Page index for paginated output.
+* `size` *(optional, default: 20)*: `int` — Number of items per page.
+
+
+* **Response (Single Item):**
+```json
+{
+  "id": 101,
+  "userId": 42,
+  "time": "2026-08-15T10:30:00",
+  "reason": "Consultation",
+  "currentTextId": 5,
+  "waitingForResponse": true,
+  "isConfirmed": false,
+  "isCancelled": false,
+  "stopTexting": false
+}
+
+```
+
+
+
+---
+
+### **POST Requests**
+
+#### Create or Update Appointment
+
+* **Endpoint:** `POST /api/appointments`
+* **Body (`@Valid Appointment`):**
+```json
+{
+  "userId": 42,
+  "time": "2026-08-15T10:30:00",
+  "reason": "Consultation",
+  "currentTextId": 5,
+  "waitingForResponse": true,
+  "isConfirmed": false,
+  "isCancelled": false,
+  "stopTexting": false
+}
+
+```
+
+
+
+#### Delete Appointment
+
+* **Endpoint:** `POST /api/appointments/{id}`
+* **Path Variable:** `id` (`Long`) — The ID of the appointment to delete.
+
+---
+
+## 2. Message & Response Controller (`/api/messages`)
+
+Base Path: `/api/messages`
+
+### **GET Requests**
+
+#### Fetch Message(s)
+
+* **Endpoint:** `GET /api/messages`
+* **Query Parameters:**
+* `id` *(optional)*: `Long` — Returns a single message matching the ID.
+* `page` / `size` *(optional)*: Pagination parameters for list queries.
+
+
+* **Response (Single Item):**
+```json
+{
+  "id": 5,
+  "text": "Hi! You have an appointment coming up. Reply C to confirm or CANCEL to cancel.",
+  "dayMileStone": 2,
+  "isBefore": true,
+  "responseIds": [10, 11]
+}
+
+```
+
+
+
+---
+
+### **POST Requests**
+
+#### Save Message
+
+* **Endpoint:** `POST /api/messages`
+* **Body (`@Valid Message`):**
+```json
+{
+  "text": "Hi! You have an appointment coming up. Reply C to confirm or CANCEL to cancel.",
+  "dayMileStone": 2,
+  "isBefore": true,
+  "responseIds": [10, 11]
+}
+
+```
+
+
+
+#### Delete Message
+
+* **Endpoint:** `POST /api/messages/delete/{id}`
+* **Path Variable:** `id` (`Long`) — The ID of the message template to delete.
+
+#### Save Response Pattern
+
+* **Endpoint:** `POST /api/messages/responses` 
+* **Body (`@Valid Response`):**
+```json
+{
+  "matchMode": "EXACT",
+  "matchPattern": "C",
+  "responseText": "Thank you! Your appointment is now confirmed.",
+  "reminderAction": "CONFIRM"
+}
+
+```
+
+
+
+#### Delete Response Pattern
+
+* **Endpoint:** `POST /api/messages/responses/delete/{id}`
+* **Path Variable:** `id` (`Long`) — The ID of the response rule to delete.
+
+Here is the documentation for the newly added `SmsLogController`.
+
+---
+
+# `SmsLogController` Documentation
+
+**Base Path:** `/api/sms-logs`
+
+The `SmsLogController` provides endpoints for end-users to inspect the full history of automated outbound messages and inbound client replies without altering background processing logic or status flags.
+
+---
+
+## **GET Requests**
+
+### 1. Fetch Paginated Logs or Single Log
+
+Retrieves a paginated list of all SMS logs ordered by the most recent first, or fetches a single log entry if an ID is provided.
+
+* **Endpoint:** `GET /api/sms-logs`
+* **Query Parameters:**
+* `id` *(optional)*: `Long` — Returns a single `SmsLog` entry matching the ID.
+* `page` *(optional, default: `0`)*: `int` — Page index for paginated output.
+* `size` *(optional, default: `20`)*: `int` — Number of items per page.
+
+
+* **Example Request:**
+`GET /api/sms-logs?page=0&size=10`
+* **Response Payload (`200 OK` - Page):**
+```json
+{
+  "content": [
+    {
+      "id": 102,
+      "appointmentId": 101,
+      "userId": 42,
+      "recipientPhone": "+15550192834",
+      "direction": "INBOUND",
+      "messageContent": "C",
+      "externalTextId": 884,
+      "timestamp": "2026-07-23T20:45:10Z"
+    },
+    {
+      "id": 101,
+      "appointmentId": 101,
+      "userId": 42,
+      "recipientPhone": "+15550192834",
+      "direction": "OUTBOUND",
+      "messageContent": "Hi! You have an appointment tomorrow at 10:30 AM. Reply C to confirm.",
+      "externalTextId": 884,
+      "timestamp": "2026-07-23T20:45:00Z"
+    }
+  ],
+  "pageable": { "pageNumber": 0, "pageSize": 10 },
+  "totalElements": 2,
+  "totalPages": 1
+}
+
+```
+
+
+
+---
+
+### 2. Fetch Logs by Appointment
+
+Retrieves all sent and received message logs for a specific appointment, ordered chronologically.
+
+* **Endpoint:** `GET /api/sms-logs/appointment`
+* **Query Parameters:**
+* `appointmentId` *(required)*: `Long`
+
+
+* **Example Request:**
+`GET /api/sms-logs/appointment?appointmentId=101`
+* **Response Payload (`200 OK`):**
+```json
+[
+  {
+    "id": 101,
+    "appointmentId": 101,
+    "userId": 42,
+    "recipientPhone": "+15550192834",
+    "direction": "OUTBOUND",
+    "messageContent": "Hi! You have an appointment tomorrow at 10:30 AM. Reply C to confirm.",
+    "externalTextId": 884,
+    "timestamp": "2026-07-23T20:45:00Z"
+  },
+  {
+    "id": 102,
+    "appointmentId": 101,
+    "userId": 42,
+    "recipientPhone": "+15550192834",
+    "direction": "INBOUND",
+    "messageContent": "C",
+    "externalTextId": 884,
+    "timestamp": "2026-07-23T20:45:10Z"
+  },
+  {
+    "id": 103,
+    "appointmentId": 101,
+    "userId": 42,
+    "recipientPhone": "+15550192834",
+    "direction": "OUTBOUND",
+    "messageContent": "Thank you! Your appointment is now confirmed.",
+    "externalTextId": 885,
+    "timestamp": "2026-07-23T20:45:11Z"
+  }
+]
+
+```
+
+
+
+---
+
+### 3. Fetch Logs by User
+
+Retrieves all historical SMS logs associated with a specific user ID across all their appointments, ordered chronologically.
+
+* **Endpoint:** `GET /api/sms-logs/user`
+* **Query Parameters:**
+* `userId` *(required)*: `Long`
+
+
+* **Example Request:**
+`GET /api/sms-logs/user?userId=42`
+* **Response Payload (`200 OK`):**
+```json
+[
+  {
+    "id": 101,
+    "appointmentId": 101,
+    "userId": 42,
+    "recipientPhone": "+15550192834",
+    "direction": "OUTBOUND",
+    "messageContent": "Hi! You have an appointment tomorrow at 10:30 AM. Reply C to confirm.",
+    "externalTextId": 884,
+    "timestamp": "2026-07-23T20:45:00Z"
+  }
+]
+
+```
+
+
+
+---
+
+## **POST Requests**
+
+### 1. Delete Log Entry
+
+Deletes a specific SMS log record by ID (following the project's `@PostMapping` deletion convention).
+
+* **Endpoint:** `POST /api/sms-logs/delete/{id}`
+* **Path Variable:**
+* `id` *(required)*: `Long` — The ID of the log entry to delete.
+
+
+* **Example Request:**
+`POST /api/sms-logs/delete/101`
+* **Response Statuses:**
+* `200 OK` — Log record successfully deleted.
+* `404 Not Found` — No log entry found matching the provided ID.
+
+
+
+
+

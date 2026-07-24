@@ -45,7 +45,7 @@ public class ConnectionLoop {
 						System.out.println("[ConnectionLoop] There is more than one server, waiting for there to only be one");
 						continue;
 					} else if (potential_servers.size() == 1) {
-						System.out.println("[ConnectionLoop] Server found");
+						System.out.println("[ConnectionLoop] Server found: " + potential_servers.get(0));
 						connected = true;	
 						connected_ip = potential_servers.get(0);	
 					}	

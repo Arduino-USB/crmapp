@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Dashboard</title>
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-sidebar: #0f172a;
+            --bg-card: #ffffff;
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --text-light: #f8fafc;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #e2e8f0;
+            --radius: 8px;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        aside {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .health-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--warning);
+            display: inline-block;
+        }
+        .health-indicator.ok { background-color: var(--success); }
+        .health-indicator.error { background-color: var(--danger); }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 16px 12px;
+            flex: 1;
+        }
+
+        .sidebar-menu li {
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+            color: #94a3b8;
+        }
+
+        .sidebar-menu li:hover, .sidebar-menu li.active {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--text-light);
+        }
+
+        /* Main Content Area */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            height: 70px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        /* Views */
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        /* UI Elements & Cards */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-header h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+        }
+
+        /* Buttons & Forms */
+        button, .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+
+        button:hover, .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.danger, .btn.danger {
+            background-color: var(--danger);
+        }
+        button.danger:hover, .btn.danger:hover {
+            background-color: #dc2626;
+        }
+
+        button.secondary, .btn.secondary {
+            background-color: #e2e8f0;
+            color: var(--text-main);
+        }
+        button.secondary:hover, .btn.secondary:hover {
+            background-color: #cbd5e1;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+            cursor: pointer;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.confirmed { background-color: #dcfce7; color: #166534; }
+        .badge.cancelled { background-color: #fee2e2; color: #991b1b; }
+        .badge.pending { background-color: #fef3c7; color: #92400e; }
+        .badge.outbound { background-color: #e0f2fe; color: #0369a1; }
+
+        /* Pagination & Layout Split */
+        .split-view {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Checkbox Group Layout for Responses */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: var(--radius);
+            background: #fff;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .checkbox-item input {
+            width: auto;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            padding: 32px;
+            border-radius: var(--radius);
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside>
+        <div class="sidebar-brand">
+            <span>CRM Control</span>
+            <div id="healthBadge" class="health-indicator" title="System Status: Checking..."></div>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active" onclick="switchTab('appointments', this)">Appointments</li>
+            <li onclick="switchTab('users', this)">Users</li>
+            <li onclick="switchTab('messages', this)">Messages</li>
+            <li onclick="switchTab('responses', this)">Responses</li>
+            <li onclick="switchTab('logs', this)">Text Logs</li>
+        </ul>
+    </aside>
+
+    <!-- Main Section -->
+    <main>
+        <header>
+            <h1 id="pageTitle">Appointments</h1>
+            <div class="header-actions" id="headerActions">
+                <button onclick="openAppointmentModal()">+ New Appointment</button>
+            </div>
+        </header>
+
+        <div class="content-body">
+
+            <!-- APPOINTMENTS VIEW -->
+            <section id="appointmentsView" class="view-section active">
+                <div class="split-view">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header">
+                            <h3>Appointments List</h3>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User ID</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointmentsTableBody"></tbody>
+                        </table>
+                        <div class="pagination">
+                            <span id="appointmentPageInfo">Page 0</span>
+                            <div class="pagination-controls">
+                                <button class="secondary" onclick="changeApptPage(-1)">Previous</button>
+                                <button class="secondary" onclick="changeApptPage(1)">Next</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detail & Log Panel -->
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header">
+                            <h3>Appointment Logs</h3>
+                        </div>
+                        <div id="appointmentDetailContent">
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Select an appointment from the table to view details and attached SMS logs.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- USERS VIEW -->
+            <section id="usersView" class="view-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Registered Users</h3>
+                        <button onclick="openModal('userModal')">+ Add User</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Preferred Name</th>
+                                <th>Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                    <div class="pagination">
+                        <span id="userPageInfo">Page 0</span>
+                        <div class="pagination-controls">
+                            <button class="secondary" onclick="changeUserPage(-1)">Previous</button>
+                            <button class="secondary" onclick="changeUserPage(1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MESSAGES VIEW -->
+            <section id="messagesView" class="view-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Automated Messages</h3>
+                        <button onclick="openMessageModal()">+ New Message</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Milestone</th>
+                                <th>Timing</th>
+                                <th>Text Content</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="messagesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- RESPONSES VIEW -->
+            <section id="responsesView" class="view-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Message Response Triggers</h3>
+                        <button onclick="openResponseModal()">+ New Response</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Mode</th>
+                                <th>Trigger Text</th>
+                                <th>Response Action</th>
+                                <th>Reply Content</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="responsesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TEXT LOGS VIEW -->
+            <section id="logsView" class="view-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>System SMS History Log</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Log ID</th>
+                                <th>Appt ID</th>
+                                <th>Phone</th>
+                                <th>Direction</th>
+                                <th>Message</th>
+                                <th>Timestamp</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody"></tbody>
+                    </table>
+                    <div class="pagination">
+                        <span id="logPageInfo">Page 0</span>
+                        <div class="pagination-controls">
+                            <button class="secondary" onclick="changeLogPage(-1)">Previous</button>
+                            <button class="secondary" onclick="changeLogPage(1)">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODALS -->
+
+    <!-- Create/Edit Appointment Modal -->
+    <div id="appointmentModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="appointmentModalTitle" style="margin-bottom: 16px;">Schedule Appointment</h3>
+            <form id="appointmentForm" onsubmit="saveAppointment(event)">
+                <input type="hidden" id="apptEditId">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="number" id="apptUserId" required placeholder="e.g. 101">
+                </div>
+                <div class="form-group">
+                    <label>Date & Time</label>
+                    <input type="datetime-local" id="apptTime" required>
+                </div>
+                <div class="form-group">
+                    <label>Milestone List (Comma separated days)</label>
+                    <input type="text" id="apptMilestones" value="1, 3, 7" required>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+                    <button type="button" class="secondary" onclick="closeModal('appointmentModal')">Cancel</button>
+                    <button type="submit">Save Appointment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="userModal" class="modal-overlay">
+        <div class="modal">
+            <h3 style="margin-bottom: 16px;">Add New User</h3>
+            <form id="userForm" onsubmit="createUser(event)">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="number" id="newUserId" required placeholder="e.g. 102">
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="newUserName" required placeholder="Jane Smith">
+                </div>
+                <div class="form-group">
+                    <label>Preferred Name</label>
+                    <input type="text" id="newUserPrefName" placeholder="Jane">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" id="newUserPhone" required placeholder="555-0142">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+                    <button type="button" class="secondary" onclick="closeModal('userModal')">Cancel</button>
+                    <button type="submit">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Message Modal -->
+    <div id="messageModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="messageModalTitle" style="margin-bottom: 16px;">Create Automated Message</h3>
+            <form id="messageForm" onsubmit="saveMessage(event)">
+                <input type="hidden" id="msgEditId">
+                <div class="form-group">
+                    <label>Message Text</label>
+                    <textarea id="msgText" rows="3" required placeholder="Your appointment is coming up..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Day Milestone</label>
+                    <input type="number" id="msgMilestone" required placeholder="3">
+                </div>
+                <div class="form-group">
+                    <label>Timing Relative to Appointment</label>
+                    <select id="msgIsBefore">
+                        <option value="true">Before Appointment</option>
+                        <option value="false">After Appointment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Linked Responses (Select by trigger text)</label>
+                    <div id="msgResponsesContainer" class="checkbox-group">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+                    <button type="button" class="secondary" onclick="closeModal('messageModal')">Cancel</button>
+                    <button type="submit">Save Message</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create/Edit Response Modal -->
+    <div id="responseModal" class="modal-overlay">
+        <div class="modal">
+            <h3 id="responseModalTitle" style="margin-bottom: 16px;">Create Response Action</h3>
+            <form id="responseForm" onsubmit="saveResponse(event)">
+                <input type="hidden" id="resEditId">
+                <div class="form-group">
+                    <label>Matching Mode</label>
+                    <select id="resMode" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Trigger Text</label>
+                    <input type="text" id="resText" required placeholder="YES">
+                </div>
+                <div class="form-group">
+                    <label>Reply Content</label>
+                    <input type="text" id="resResponse" required placeholder="Thank you for confirming!">
+                </div>
+                <div class="form-group">
+                    <label>Action</label>
+                    <select id="resAction" required></select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
+                    <button type="button" class="secondary" onclick="closeModal('responseModal')">Cancel</button>
+                    <button type="submit">Save Response</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        let apptPage = 0;
+        let userPage = 0;
+        let logPage = 0;
+        const pageSize = 10;
+        let availableResponsesCache = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            checkHealth();
+            loadAppointments();
+            loadUsers();
+            loadMessages();
+            loadResponses();
+            loadLogs();
+            loadEnumDropdowns();
+        });
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            
+            element.classList.add('active');
+            document.getElementById(tabName + 'View').classList.add('active');
+
+            const titles = {
+                appointments: 'Appointments',
+                users: 'Users',
+                messages: 'Messages',
+                responses: 'Responses',
+                logs: 'Text Logs'
+            };
+            document.getElementById('pageTitle').innerText = titles[tabName];
+
+            const actionContainer = document.getElementById('headerActions');
+            if(tabName === 'appointments') {
+                actionContainer.innerHTML = `<button onclick="openAppointmentModal()">+ New Appointment</button>`;
+            } else if(tabName === 'users') {
+                actionContainer.innerHTML = `<button onclick="openModal('userModal')">+ Add User</button>`;
+            } else if(tabName === 'messages') {
+                actionContainer.innerHTML = `<button onclick="openMessageModal()">+ New Message</button>`;
+            } else if(tabName === 'responses') {
+                actionContainer.innerHTML = `<button onclick="openResponseModal()">+ New Response</button>`;
+            } else {
+                actionContainer.innerHTML = '';
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        async function loadEnumDropdowns() {
+            try {
+                const modesRes = await fetch('/api/messages/responses/match_modes');
+                const modes = await modesRes.json();
+                document.getElementById('resMode').innerHTML = modes.map(m => `<option value="${m}">${m}</option>`).join('');
+
+                const actionsRes = await fetch('/api/messages/responses/get_actions');
+                const actions = await actionsRes.json();
+                document.getElementById('resAction').innerHTML = actions.map(a => `<option value="${a}">${a}</option>`).join('');
+            } catch (e) {
+                console.error("Failed to load enum options", e);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/alive');
+                const data = await res.json();
+                const indicator = document.getElementById('healthBadge');
+                if (data.status === 'ok') {
+                    indicator.className = 'health-indicator ok';
+                    indicator.title = 'System Status: Online';
+                } else {
+                    indicator.className = 'health-indicator error';
+                }
+            } catch (e) {
+                document.getElementById('healthBadge').className = 'health-indicator error';
+            }
+        }
+
+        // --- APPOINTMENTS API ---
+        async function loadAppointments() {
+            try {
+                const res = await fetch(`/api/appointments?page=${apptPage}&size=${pageSize}`);
+                const data = await res.json();
+                const content = data.content || (Array.isArray(data) ? data : [data]);
+                const tbody = document.getElementById('appointmentsTableBody');
+                tbody.innerHTML = '';
+
+                if(content.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No appointments found.</td></tr>`;
+                    return;
+                }
+
+                content.forEach(appt => {
+                    let statusBadge = '<span class="badge pending">Pending</span>';
+                    if (appt.confirmed) statusBadge = '<span class="badge confirmed">Confirmed</span>';
+                    else if (appt.cancelled) statusBadge = '<span class="badge cancelled">Cancelled</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${appt.id}</td>
+                        <td>${appt.userId}</td>
+                        <td>${new Date(appt.time).toLocaleString()}</td>
+                        <td>${statusBadge}</td>
+                    `;
+                    tr.onclick = () => selectAppointment(appt.id);
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('appointmentPageInfo').innerText = `Page ${apptPage}`;
+            } catch (e) {
+                console.error("Failed loading appointments", e);
+            }
+        }
+
+        function openAppointmentModal(appt = null) {
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('apptEditId').value = '';
+            if (appt) {
+                document.getElementById('appointmentModalTitle').innerText = 'Edit Appointment';
+                document.getElementById('apptEditId').value = appt.id;
+                document.getElementById('apptUserId').value = appt.userId;
+                document.getElementById('apptTime').value = appt.time ? appt.time.substring(0, 16) : '';
+                document.getElementById('apptMilestones').value = appt.mileStoneList ? appt.mileStoneList.join(', ') : '1, 3, 7';
+            } else {
+                document.getElementById('appointmentModalTitle').innerText = 'Schedule Appointment';
+            }
+            openModal('appointmentModal');
+        }
+
+        async function saveAppointment(e) {
+            e.preventDefault();
+            const editId = document.getElementById('apptEditId').value;
+            const payload = {
+                userId: parseInt(document.getElementById('apptUserId').value),
+                time: new Date(document.getElementById('apptTime').value).toISOString(),
+                mileStoneList: document.getElementById('apptMilestones').value.split(',').map(Number)
+            };
+
+            // If updating, include ID if supported or use POST endpoint
+            if(editId) payload.id = parseInt(editId);
+
+            const res = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                closeModal('appointmentModal');
+                loadAppointments();
+            } else {
+                alert('Failed to save appointment');
+            }
+        }
+
+        async function deleteAppointment(id) {
+            if(!confirm("Are you sure you want to delete this appointment?")) return;
+            const res = await fetch(`/api/appointments/${id}`, { method: 'POST' });
+            if(res.ok || res.status === 204) {
+                loadAppointments();
+                document.getElementById('appointmentDetailContent').innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">Appointment deleted.</p>`;
+            }
+        }
+
+        async function selectAppointment(id) {
+            const detailContainer = document.getElementById('appointmentDetailContent');
+            detailContainer.innerHTML = `<p style="color: var(--text-muted);">Loading logs & info...</p>`;
+
+            try {
+                const [apptRes, logsRes] = await Promise.all([
+                    fetch(`/api/appointments?id=${id}`),
+                    fetch(`/api/sms-logs/appointment?appointmentId=${id}`)
+                ]);
+
+                const apptData = await apptRes.json();
+                const logsData = await logsRes.json();
+                const appt = Array.isArray(apptData) ? apptData[0] : apptData;
+
+                let logsHtml = logsData.length ? logsData.map(l => `
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
+                            <span>${l.direction}</span>
+                            <span>${new Date(l.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <p style="font-size:0.85rem;">${l.messageContent}</p>
+                    </div>
+                `).join('') : `<p style="color: var(--text-muted); font-size: 0.85rem;">No text logs for this appointment.</p>`;
+
+                detailContainer.innerHTML = `
+                    <div style="margin-bottom: 16px;">
+                        <p style="font-size:0.9rem;"><strong>ID:</strong> ${appt.id} | <strong>User ID:</strong> ${appt.userId}</p>
+                        <p style="font-size:0.9rem; margin-top:4px;"><strong>Time:</strong> ${new Date(appt.time).toLocaleString()}</p>
+                        <p style="font-size:0.9rem; margin-top:4px;"><strong>Reason:</strong> ${appt.reason || 'None'}</p>
+                    </div>
+                    <h4 style="font-size:0.95rem; margin-bottom:8px;">Associated SMS Logs</h4>
+                    <div style="max-height: 160px; overflow-y: auto; margin-bottom: 16px;">
+                        ${logsHtml}
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="secondary" style="flex:1; justify-content:center;" onclick='openAppointmentModelObj(${JSON.stringify(appt)})'>Edit</button>
+                        <button class="danger" style="flex:1; justify-content:center;" onclick="deleteAppointment(${appt.id})">Delete</button>
+                    </div>
+                `;
+            } catch (e) {
+                detailContainer.innerHTML = `<p style="color: var(--danger);">Error loading appointment details.</p>`;
+            }
+        }
+
+        function openAppointmentModelObj(appt) {
+            openAppointmentModal(appt);
+        }
+
+        function changeApptPage(dir) {
+            apptPage = Math.max(0, apptPage + dir);
+            loadAppointments();
+        }
+
+        // --- USERS API ---
+        async function loadUsers() {
+            try {
+                const res = await fetch(`/api/users/get_all_users?page=${userPage}&pageSize=${pageSize}`);
+                const data = await res.json();
+                const content = data.content || [];
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+
+                if(content.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No users found.</td></tr>`;
+                    return;
+                }
+
+                content.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.name}</td>
+                            <td>${u.prefName || '-'}</td>
+                            <td>${u.phone}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('userPageInfo').innerText = `Page ${userPage}`;
+            } catch (e) {
+                console.error("Failed loading users", e);
+            }
+        }
+
+        async function createUser(e) {
+            e.preventDefault();
+            const payload = {
+                id: parseInt(document.getElementById('newUserId').value),
+                name: document.getElementById('newUserName').value,
+                prefName: document.getElementById('newUserPrefName').value,
+                phone: document.getElementById('newUserPhone').value
+            };
+
+            const res = await fetch('/api/users/create_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                closeModal('userModal');
+                loadUsers();
+                document.getElementById('userForm').reset();
+            } else {
+                alert('Failed to create user');
+            }
+        }
+
+        function changeUserPage(dir) {
+            userPage = Math.max(0, userPage + dir);
+            loadUsers();
+        }
+
+        // --- MESSAGES API ---
+        async function loadMessages() {
+            try {
+                const res = await fetch('/api/messages');
+                const data = await res.json();
+                const tbody = document.getElementById('messagesTableBody');
+                tbody.innerHTML = '';
+
+                if(!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No messages found.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(m => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${m.id}</td>
+                            <td>Day ${m.dayMileStone}</td>
+                            <td>${m.isBefore ? 'Before' : 'After'}</td>
+                            <td>${m.text}</td>
+                            <td>
+                                <button class="secondary" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick='openMessageModalObj(${JSON.stringify(m)})'>Edit</button>
+                                <button class="danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteMessage(${m.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                console.error("Failed loading messages", e);
+            }
+        }
+
+        async function openMessageModal(msg = null) {
+            document.getElementById('messageForm').reset();
+            document.getElementById('msgEditId').value = '';
+            
+            // Populate response checklists dynamically
+            try {
+                const res = await fetch('/api/messages/responses');
+                availableResponsesCache = await res.json();
+            } catch(e) { availableResponsesCache = []; }
+
+            const container = document.getElementById('msgResponsesContainer');
+            container.innerHTML = availableResponsesCache.length ? availableResponsesCache.map(r => `
+                <label class="checkbox-item">
+                    <input type="checkbox" name="responseCheckbox" value="${r.id}">
+                    <span>ID: ${r.id} — Trigger: "<strong>${r.text}</strong>"</span>
+                </label>
+            `).join('') : '<p style="font-size:0.85rem; color:var(--text-muted);">No responses created yet.</p>';
+
+            if (msg) {
+                document.getElementById('messageModalTitle').innerText = 'Edit Automated Message';
+                document.getElementById('msgEditId').value = msg.id;
+                document.getElementById('msgText').value = msg.text;
+                document.getElementById('msgMilestone').value = msg.dayMileStone;
+                document.getElementById('msgIsBefore').value = msg.isBefore.toString();
+
+                if (msg.responseIds && Array.isArray(msg.responseIds)) {
+                    msg.responseIds.forEach(id => {
+                        const cb = container.querySelector(`input[value="${id}"]`);
+                        if(cb) cb.checked = true;
+                    });
+                }
+            } else {
+                document.getElementById('messageModalTitle').innerText = 'Create Automated Message';
+            }
+            openModal('messageModal');
+        }
+
+        function openMessageModalObj(msg) {
+            openMessageModal(msg);
+        }
+
+        async function saveMessage(e) {
+            e.preventDefault();
+            const editId = document.getElementById('msgEditId').value;
+            const selectedCheckboxes = document.querySelectorAll('input[name="responseCheckbox"]:checked');
+            const responseIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+
+            const payload = {
+                text: document.getElementById('msgText').value,
+                dayMileStone: parseInt(document.getElementById('msgMilestone').value),
+                isBefore: document.getElementById('msgIsBefore').value === 'true',
+                responseIds: responseIds
+            };
+
+            if(editId) payload.id = parseInt(editId);
+
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                closeModal('messageModal');
+                loadMessages();
+            } else {
+                alert('Failed to save message configuration.');
+            }
+        }
+
+        async function deleteMessage(id) {
+            if(!confirm("Delete this message configuration?")) return;
+            const res = await fetch(`/api/messages/delete/${id}`, { method: 'POST' });
+            if(res.ok) loadMessages();
+        }
+
+        // --- RESPONSES API ---
+        async function loadResponses() {
+            try {
+                const res = await fetch('/api/messages/responses');
+                const data = await res.json();
+                const tbody = document.getElementById('responsesTableBody');
+                tbody.innerHTML = '';
+
+                if(!Array.isArray(data) || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No response handlers configured.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(r => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.id}</td>
+                            <td>${r.mode}</td>
+                            <td><code>${r.text}</code></td>
+                            <td><span class="badge confirmed">${r.action}</span></td>
+                            <td>${r.response}</td>
+                            <td>
+                                <button class="secondary" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick='openResponseModalObj(${JSON.stringify(r)})'>Edit</button>
+                                <button class="danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteResponse(${r.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                console.error("Failed loading responses", e);
+            }
+        }
+
+        function openResponseModal(resObj = null) {
+            document.getElementById('responseForm').reset();
+            document.getElementById('resEditId').value = '';
+            if (resObj) {
+                document.getElementById('responseModalTitle').innerText = 'Edit Response Action';
+                document.getElementById('resEditId').value = resObj.id;
+                document.getElementById('resMode').value = resObj.mode;
+                document.getElementById('resText').value = resObj.text;
+                document.getElementById('resResponse').value = resObj.response;
+                document.getElementById('resAction').value = resObj.action;
+            } else {
+                document.getElementById('responseModalTitle').innerText = 'Create Response Action';
+            }
+            openModal('responseModal');
+        }
+
+        function openResponseModalObj(resObj) {
+            openResponseModal(resObj);
+        }
+
+        async function saveResponse(e) {
+            e.preventDefault();
+            const editId = document.getElementById('resEditId').value;
+            const payload = {
+                mode: document.getElementById('resMode').value,
+                text: document.getElementById('resText').value,
+                response: document.getElementById('resResponse').value,
+                action: document.getElementById('resAction').value
+            };
+
+            if(editId) payload.id = parseInt(editId);
+
+            const res = await fetch('/api/messages/responses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                closeModal('responseModal');
+                loadResponses();
+            } else {
+                alert('Failed to save response.');
+            }
+        }
+
+        async function deleteResponse(id) {
+            if(!confirm("Delete this response hook?")) return;
+            const res = await fetch(`/api/messages/responses/delete/${id}`, { method: 'POST' });
+            if(res.ok) loadResponses();
+        }
+
+        // --- SMS LOGS API ---
+        async function loadLogs() {
+            try {
+                const res = await fetch(`/api/sms-logs?page=${logPage}&size=${pageSize}`);
+                const data = await res.json();
+                const content = Array.isArray(data) ? data : (data.content || []);
+                const tbody = document.getElementById('logsTableBody');
+                tbody.innerHTML = '';
+
+                if(content.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No log history available.</td></tr>`;
+                    return;
+                }
+
+                content.forEach(l => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${l.id}</td>
+                            <td>${l.appointmentId}</td>
+                            <td>${l.recipientPhone}</td>
+                            <td><span class="badge outbound">${l.direction}</span></td>
+                            <td>${l.messageContent}</td>
+                            <td>${new Date(l.timestamp).toLocaleString()}</td>
+                            <td><button class="danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteLog(${l.id})">Delete</button></td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('logPageInfo').innerText = `Page ${logPage}`;
+            } catch (e) {
+                console.error("Failed loading sms logs", e);
+            }
+        }
+
+        async function deleteLog(id) {
+            if(!confirm("Delete this log record?")) return;
+            const res = await fetch(`/api/sms-logs/delete/${id}`, { method: 'POST' });
+            if(res.ok) loadLogs();
+        }
+
+        function changeLogPage(dir) {
+            logPage = Math.max(0, logPage + dir);
+            loadLogs();
+        }
+    </script>
+</body>
+</html>

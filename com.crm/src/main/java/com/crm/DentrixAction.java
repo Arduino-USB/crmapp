@@ -1,5 +1,7 @@
 package com.crm;
 
+import org.springframework.boot.system.ApplicationHome;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -36,12 +38,16 @@ public class DentrixAction {
 
         try {
             // Get current working directory
-            String currentDir = Paths.get("").toAbsolutePath().toString();
-            
-            // Build absolute path to: {currentDir}/DentrixUtils/{scriptName}
-            Path scriptPath = Path.of(currentDir)
-                    .resolve("DentrixUtils")
-                    .resolve(scriptAndArgs[0]);
+            // Get the directory where the JAR (or compiled class file) resides
+			ApplicationHome home = new ApplicationHome(DentrixAction.class);
+
+			Path jarPath = home.getSource().toPath();
+			Path jarDir = jarPath.getParent();
+
+			// Build absolute path to: {jarDir}/DentrixUtils/{scriptName}
+			Path scriptPath = jarDir
+					.resolve("DentrixUtils")
+					.resolve(scriptAndArgs[0]);
 
             // Assemble full command array: "cmd", "/c", scriptPath, arg1, arg2...
             List<String> commandList = new ArrayList<>();

@@ -28,7 +28,6 @@ public class TextMgr {
     }
 
     private void processJobs() {
-		System.out.println("connected = " + ConnectionLoop.connected());
         try {
             if (!ConnectionLoop.connected()) {
                 return;

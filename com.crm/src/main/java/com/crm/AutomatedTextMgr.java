@@ -4,11 +4,13 @@ import com.crm.entites.Appointment;
 import com.crm.entites.Message;
 import com.crm.entites.Response;
 import com.crm.entites.User;
+import com.crm.entites.SmsLog;
 import com.crm.enums.ResponseAction;
 import com.crm.repos.AppointmentRepo;
 import com.crm.repos.MessageRepo;
 import com.crm.repos.ResponseRepo;
 import com.crm.repos.UserRepo;
+import com.crm.repos.SmsLogRepo;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -25,6 +27,7 @@ public class AutomatedTextMgr {
     private final AppointmentRepo appointmentRepo;
     private final MessageRepo messageRepo;
     private final ResponseRepo responseRepo;
+    private final SmsLogRepo smsLogRepo;
     private final TextMgr textMgr;
     private final ActionMgr actionMgr;
 
@@ -35,6 +38,7 @@ public class AutomatedTextMgr {
             AppointmentRepo appointmentRepo,
             MessageRepo messageRepo,
             ResponseRepo responseRepo,
+            SmsLogRepo smsLogRepo,
             TextMgr textMgr,
             ActionMgr actionMgr
     ) {
@@ -42,6 +46,7 @@ public class AutomatedTextMgr {
         this.appointmentRepo = appointmentRepo;
         this.messageRepo = messageRepo;
         this.responseRepo = responseRepo;
+        this.smsLogRepo = smsLogRepo;
         this.textMgr = textMgr;
         this.actionMgr = actionMgr;
 
@@ -65,7 +70,8 @@ public class AutomatedTextMgr {
         List<Message> messages = messageRepo.findAll();
         Instant currentTime = Instant.now();
 
-        System.out.println("[AutomatedTextMgr] Tick: Found " + appointments.size() 
+        System.out.println("[AutomatedTextMgr] --- TICK START ---");
+        System.out.println("[AutomatedTextMgr] Found " + appointments.size() 
                 + " appointment(s) and " + messages.size() + " message rule(s).");
 
         // === 1. Handle customer replies ===
@@ -74,21 +80,20 @@ public class AutomatedTextMgr {
             if (userOpt.isPresent()) {
                 handleCustomerReply(appointment, userOpt.get());
             } else {
-                System.out.println("[AutomatedTextMgr] Reply Check: No user found for Appt ID " + appointment.getId());
+                System.out.println("[AutomatedTextMgr] [REPLY CHECK] No user found for Appt ID " + appointment.getId());
             }
         }
 
         // === 2. Send automated messages ===
         for (Appointment appointment : appointments) {
-            // Respect STOP_TEXTING flag for scheduled outgoing reminders
             if (appointment.isStopTexting()) {
-                System.out.println("[AutomatedTextMgr] Appt ID " + appointment.getId() + " has stopTexting=true. Skipping outgoing reminders.");
+                System.out.println("[AutomatedTextMgr] [OUTBOUND SKIPPED] Appt ID " + appointment.getId() + " has stopTexting=true.");
                 continue;
             }
 
             Instant apptTime = appointment.getTime();
             if (apptTime == null) {
-                System.out.println("[AutomatedTextMgr] Appt ID " + appointment.getId() + " has NULL time. Skipping.");
+                System.out.println("[AutomatedTextMgr] [OUTBOUND SKIPPED] Appt ID " + appointment.getId() + " has NULL time.");
                 continue;
             }
 
@@ -155,25 +160,47 @@ public class AutomatedTextMgr {
                     User user = userOpt.get();
 
                     Long textId = textMgr.sendText(user.getPhone(), msg.getText());
+                    System.out.println("[AutomatedTextMgr] [OUTBOUND SUCCESS] Sent text ID: " + textId + " to Appt ID: " + appointment.getId());
+
+                    smsLogRepo.save(new SmsLog(
+                        appointment.getId(),
+                        user.getId(),
+                        user.getPhone(),
+                        "OUTBOUND",
+                        msg.getText(),
+                        textId
+                    ));                
 
                     appointment.setCurrentTextId(textId);
                     appointment.setCurrentReminderId(msg.getId());
                     appointment.setWaitingForResponse(true);
                     markMessageSent(appointment, milestoneDays, msg.isBefore());
 
+                    System.out.println("[AutomatedTextMgr] Updated Appt ID " + appointment.getId() 
+                            + " with currentTextId=" + textId + ", currentReminderId=" + msg.getId());
+
                     break;
                 }
             }
         }
+        System.out.println("[AutomatedTextMgr] --- TICK END ---");
     }
 
     private void handleCustomerReply(Appointment appointment, User user) {
         Long currentTextId = appointment.getCurrentTextId();
+        
+        System.out.println("[AutomatedTextMgr] [REPLY CHECK] Appt ID: " + appointment.getId() 
+                + " | currentTextId: " + currentTextId 
+                + " | currentReminderId: " + appointment.getCurrentReminderId()
+                + " | isWaitingForResponse: " + appointment.isWaitingForResponse());
+
         if (currentTextId == null) {
+            System.out.println("[AutomatedTextMgr] [REPLY SKIPPED] Appt ID " + appointment.getId() + " has null currentTextId.");
             return;
         }
 
         List<TextMgr.TextMessage> incomingReplies = textMgr.getReplies(currentTextId);
+        System.out.println("[AutomatedTextMgr] [REPLY CHECK] Fetched " + incomingReplies.size() + " reply(ies) for text ID " + currentTextId);
 
         if (incomingReplies.isEmpty()) {
             return;
@@ -181,72 +208,100 @@ public class AutomatedTextMgr {
 
         Long messageId = appointment.getCurrentReminderId();
         if (messageId == null) {
+            System.out.println("[AutomatedTextMgr] [REPLY ERROR] Found replies, but currentReminderId is null for Appt ID " + appointment.getId());
             return;
         }
 
         Message currentMessage = messageRepo.findById(messageId).orElse(null);
         if (currentMessage == null) {
+            System.out.println("[AutomatedTextMgr] [REPLY ERROR] Message ID " + messageId + " not found in database.");
             return;
         }
 
         TextMgr.TextMessage latestReply = incomingReplies.get(incomingReplies.size() - 1);
+        System.out.println("[AutomatedTextMgr] [REPLY RECEIVED] Appt ID " + appointment.getId() 
+                + " latest reply text: \"" + latestReply.getText() + "\"");
 
-        for (Long responseId : currentMessage.getResponseIds()) {
+        boolean alreadyLogged = smsLogRepo.findByAppointmentIdOrderByTimestampAsc(appointment.getId())
+            .stream()
+            .anyMatch(log -> "INBOUND".equals(log.getDirection()) && latestReply.getText().equals(log.getMessageContent()));
+
+        if (!alreadyLogged) {
+            System.out.println("[AutomatedTextMgr] Logging new INBOUND message to SmsLog Repo...");
+            smsLogRepo.save(new SmsLog(
+                appointment.getId(),
+                user.getId(),
+                user.getPhone(),
+                "INBOUND",
+                latestReply.getText(),
+                currentTextId
+            ));
+        }
+
+        List<Long> responseIds = currentMessage.getResponseIds();
+        System.out.println("[AutomatedTextMgr] Checking reply against " + (responseIds != null ? responseIds.size() : 0) + " response rule(s)...");
+
+        if (responseIds == null || responseIds.isEmpty()) {
+            System.out.println("[AutomatedTextMgr] [REPLY WARNING] Message ID " + messageId + " has NO response IDs associated with it!");
+            return;
+        }
+
+        for (Long responseId : responseIds) {
             Response response = responseRepo.findById(responseId).orElse(null);
             if (response == null) {
+                System.out.println("[AutomatedTextMgr] Response ID " + responseId + " not found in DB.");
                 continue;
             }
 
-            if (!ResponseMatcher.matches(response, latestReply.getText())) {
+            boolean matches = ResponseMatcher.matches(response, latestReply.getText());
+            System.out.println("[AutomatedTextMgr] Testing pattern/text against response ID " + responseId 
+                    + " (" + response.getText() + "): " + (matches ? "MATCHED" : "NO MATCH"));
+
+            if (!matches) {
                 continue;
             }
 
             ResponseAction newAction = response.getAction();
             ResponseAction previousAction = lastExecutedActions.get(appointment.getId());
 
-            // Check if an action was already executed for this appointment session (Update branch)
+            // Update branch
             if (previousAction != null) {
                 if (previousAction != newAction) {
-                    System.out.println("[AutomatedTextMgr] UPDATING REPLY FOR APPT " + appointment.getId() 
+                    System.out.println("[AutomatedTextMgr] [ACTION UPDATED] Appt ID " + appointment.getId() 
                             + ": " + previousAction + " -> " + newAction);
 
-                    // 1. Revert the old action
                     actionMgr.undoAction(previousAction, appointment);
-
-                    // 2. Perform the new action
                     actionMgr.doAction(newAction, appointment);
-
-                    // 3. Update tracked state
                     lastExecutedActions.put(appointment.getId(), newAction);
 
-                    // 4. Send notification text back to user
                     String changeText = "Response changed for " + previousAction + " to " + newAction;
                     Long newTextId = textMgr.sendText(user.getPhone(), changeText);
 
                     appointment.setCurrentTextId(newTextId);
-                    
-                    // Save mutated state (stopTexting, isConfirmed, isCancelled, currentTextId)
                     appointmentRepo.save(appointment);
+                } else {
+                    System.out.println("[AutomatedTextMgr] Action " + newAction + " already executed previously for Appt ID " + appointment.getId());
                 }
                 return;
             }
 
             // Initial response branch
-            System.out.println("[AutomatedTextMgr] MATCHED INITIAL RESPONSE: " + response.getText());
+            System.out.println("[AutomatedTextMgr] [ACTION EXECUTING] Matched Response: " + response.getText() + " | Action: " + newAction);
 
             Long newTextId = textMgr.sendText(user.getPhone(), response.getResponse());
 
             appointment.setCurrentTextId(newTextId);
             appointment.setWaitingForResponse(false);
 
-            // Execute action (e.g. STOP_TEXTING sets stopTexting = true)
             actionMgr.doAction(newAction, appointment);
             lastExecutedActions.put(appointment.getId(), newAction);
 
-            // Save mutated entity to database so stopTexting persists
             appointmentRepo.save(appointment);
+            System.out.println("[AutomatedTextMgr] [SUCCESS] Handled reply, updated database for Appt ID " + appointment.getId());
             return;
         }
+
+        System.out.println("[AutomatedTextMgr] Reply \"" + latestReply.getText() + "\" did not match any defined response rules.");
     }
 
     private boolean hasSentMessage(Appointment appointment, int milestone, boolean isBefore) {

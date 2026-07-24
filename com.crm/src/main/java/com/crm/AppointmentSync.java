@@ -28,7 +28,29 @@ public class AppointmentSync {
 	
 	private UserRepo userRepo;
 	private AppointmentRepo appointmentRepo;
-	private int daysAhead = 10;	
+	private int daysAhead = 30;	
+
+	private String formatPhoneNumber(String phone) {
+		if (phone == null || phone.isBlank()) {
+		    return "";
+		}
+
+		// Strip all non-digit characters (e.g. spaces, parentheses, hyphens)
+		String digits = phone.replaceAll("\\D", "");
+
+		// If it's a standard 10-digit US number, prepend country code +1
+		if (digits.length() == 10) {
+		    return "+1" + digits;
+		}
+		
+		// If it already includes the 1 country code (11 digits starting with 1)
+		if (digits.length() == 11 && digits.startsWith("1")) {
+		    return "+" + digits;
+		}
+
+		// Fallback: return formatted digits with + if non-standard length
+		return "+" + digits;
+	}
 
 	private void parseJsonToDb(String jsonData, LocalDate currentDate) {
 
@@ -45,7 +67,14 @@ public class AppointmentSync {
 
 		        System.out.println("[AppointmentSync] Row data: " + row);
 
-		        long userId = Long.parseLong(row.get("Chart #"));
+				String chart = row.get("Chart #");
+
+				if (chart == null || chart.isBlank()) {
+					System.out.println("[AppointmentSync] Skipping blank row");
+					continue;
+				}
+
+				long userId = Long.parseLong(chart);
 
 		        Optional<User> user = userRepo.findById(userId);
 
@@ -60,7 +89,10 @@ public class AppointmentSync {
 		            newUser.setId(userId);
 		            newUser.setName(row.get("Name"));
 		            newUser.setPrefName(row.get("Pref Name"));
-		            newUser.setPhone(row.get("Mobile Phone"));
+
+		            // Convert (xxx) xxx-xxxx -> +1xxxxxxxxxx
+		            String rawPhone = row.get("Mobile Phone");
+		            newUser.setPhone(formatPhoneNumber(rawPhone));
 
 		            userRepo.save(newUser);
 		        }
@@ -149,7 +181,6 @@ public class AppointmentSync {
 
 		}
 	}
-
 
 	public AppointmentSync(UserRepo userRepo, AppointmentRepo appointmentRepo) {
 
