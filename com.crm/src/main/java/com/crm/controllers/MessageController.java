@@ -13,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/messages")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -32,10 +30,6 @@ public class MessageController {
     // MESSAGE ENDPOINTS
     // ==========================================
 
-    /**
-     * Get all messages or get a specific message using query parameter ?id=...
-     * Example: GET /api/messages or GET /api/messages?id=1
-     */
     @GetMapping
     public ResponseEntity<?> getMessages(@RequestParam(required = false) Long id) {
         if (id != null) {
@@ -46,20 +40,26 @@ public class MessageController {
         return ResponseEntity.ok(messageRepo.findAll());
     }
 
-    /**
-     * Add/Create a new message
-     * Example: POST /api/messages
-     */
     @PostMapping
     public ResponseEntity<Message> createMessage(@Valid @RequestBody Message message) {
         Message savedMessage = messageRepo.save(message);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedMessage);
     }
 
-    /**
-     * Delete a message by ID via POST
-     * Example: POST /api/messages/delete/1
-     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Message> updateMessage(@PathVariable Long id, @Valid @RequestBody Message updatedMessage) {
+        return messageRepo.findById(id)
+                .map(existingMessage -> {
+                    existingMessage.setText(updatedMessage.getText());
+                    existingMessage.setDayMileStone(updatedMessage.getDayMileStone());
+                    existingMessage.setBefore(updatedMessage.isBefore());
+					existingMessage.setResponseIds(updatedMessage.getResponseIds());
+                    Message saved = messageRepo.save(existingMessage);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/delete/{id}")
     public ResponseEntity<Void> deleteMessage(@PathVariable Long id) {
         if (!messageRepo.existsById(id)) {
@@ -73,10 +73,6 @@ public class MessageController {
     // RESPONSE ENDPOINTS
     // ==========================================
 
-    /**
-     * Get all responses or get a specific response using query parameter ?id=...
-     * Example: GET /api/messages/responses or GET /api/messages/responses?id=1
-     */
     @GetMapping("/responses")
     public ResponseEntity<?> getResponses(@RequestParam(required = false) Long id) {
         if (id != null) {
@@ -87,20 +83,24 @@ public class MessageController {
         return ResponseEntity.ok(responseRepo.findAll());
     }
 
-    /**
-     * Add/Create a new response
-     * Example: POST /api/messages/responses
-     */
     @PostMapping("/responses")
     public ResponseEntity<Response> createResponse(@Valid @RequestBody Response response) {
         Response savedResponse = responseRepo.save(response);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedResponse);
     }
 
-    /**
-     * Delete a response by ID via POST
-     * Example: POST /api/messages/responses/delete/1
-     */
+    @PutMapping("/responses/{id}")
+    public ResponseEntity<Response> updateResponse(@PathVariable Long id, @Valid @RequestBody Response updatedResponse) {
+        return responseRepo.findById(id)
+                .map(existingResponse -> {
+                    existingResponse.setAction(updatedResponse.getAction());
+                    existingResponse.setMode(updatedResponse.getMode());
+                    Response saved = responseRepo.save(existingResponse);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/responses/delete/{id}")
     public ResponseEntity<Void> deleteResponse(@PathVariable Long id) {
         if (!responseRepo.existsById(id)) {

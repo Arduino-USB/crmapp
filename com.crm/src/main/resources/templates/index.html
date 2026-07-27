@@ -277,7 +277,7 @@
             gap: 8px;
         }
 
-        /* Checkbox Group Layout for Responses */
+        /* Checkbox Group Layout for Responses/Milestones */
         .checkbox-group {
             display: flex;
             flex-direction: column;
@@ -299,6 +299,35 @@
         }
         .checkbox-item input {
             width: auto;
+        }
+
+        /* Searchable / Paginated Dropdown Container */
+        .paginated-dropdown-box {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: #fff;
+            padding: 8px;
+        }
+        .dropdown-list-container {
+            max-height: 140px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            margin-top: 6px;
+            background: #fff;
+        }
+        .dropdown-item {
+            padding: 8px 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .dropdown-item:hover {
+            background-color: #f8fafc;
+        }
+        .dropdown-item.selected {
+            background-color: #e0f2fe;
+            font-weight: 500;
         }
 
         /* Modals */
@@ -332,11 +361,11 @@
             <div id="healthBadge" class="health-indicator" title="System Status: Checking..."></div>
         </div>
         <ul class="sidebar-menu">
-            <li class="active" onclick="switchTab('appointments', this)">Appointments</li>
-            <li onclick="switchTab('users', this)">Users</li>
-            <li onclick="switchTab('messages', this)">Messages</li>
-            <li onclick="switchTab('responses', this)">Responses</li>
-            <li onclick="switchTab('logs', this)">Text Logs</li>
+            <li id="menu-appointments" onclick="switchTab('appointments', this)">Appointments</li>
+            <li id="menu-users" onclick="switchTab('users', this)">Users</li>
+            <li id="menu-messages" onclick="switchTab('messages', this)">Messages</li>
+            <li id="menu-responses" onclick="switchTab('responses', this)">Responses</li>
+            <li id="menu-logs" onclick="switchTab('logs', this)">Text Logs</li>
         </ul>
     </aside>
 
@@ -362,7 +391,7 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>User ID</th>
+                                    <th>User</th>
                                     <th>Time</th>
                                     <th>Status</th>
                                 </tr>
@@ -395,15 +424,16 @@
                 <div class="card">
                     <div class="card-header">
                         <h3>Registered Users</h3>
-                        <button onclick="openModal('userModal')">+ Add User</button>
+                        <button onclick="openUserModal()">+ Add User</button>
                     </div>
                     <table>
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
+                                <th>Chart # (ID)</th>
+                                <th>Name (Last, First)</th>
                                 <th>Preferred Name</th>
                                 <th>Phone</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody"></tbody>
@@ -432,6 +462,7 @@
                                 <th>Milestone</th>
                                 <th>Timing</th>
                                 <th>Text Content</th>
+                                <th>Responses</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -504,18 +535,42 @@
             <h3 id="appointmentModalTitle" style="margin-bottom: 16px;">Schedule Appointment</h3>
             <form id="appointmentForm" onsubmit="saveAppointment(event)">
                 <input type="hidden" id="apptEditId">
+                <input type="hidden" id="selectedUserId" required>
+                
                 <div class="form-group">
-                    <label>User ID</label>
-                    <input type="number" id="apptUserId" required placeholder="e.g. 101">
+                    <label>User (Paginated Selection)</label>
+                    <div class="paginated-dropdown-box">
+                        <div id="selectedUserDisplay" style="font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-main);">No user selected</div>
+                        <div id="userDropdownList" class="dropdown-list-container">
+                            <!-- Populated dynamically via pagination -->
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                            <span id="apptUserPageIndicator">Page 0</span>
+                            <div style="display: flex; gap: 4px;">
+                                <button type="button" class="secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="changeApptUserPickerPage(-1)">Prev</button>
+                                <button type="button" class="secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="changeApptUserPickerPage(1)">Next</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="form-group">
                     <label>Date & Time</label>
                     <input type="datetime-local" id="apptTime" required>
                 </div>
+
                 <div class="form-group">
-                    <label>Milestone List (Comma separated days)</label>
-                    <input type="text" id="apptMilestones" value="1, 3, 7" required>
+                    <label>Reason / Notes</label>
+                    <input type="text" id="apptReason" placeholder="Follow-up consultation">
                 </div>
+
+                <div class="form-group">
+                    <label>Milestones (Select messages; days are grabbed automatically)</label>
+                    <div id="apptMilestonesContainer" class="checkbox-group" style="max-height: 180px;">
+                        <!-- Populated dynamically with messages and their native day badges -->
+                    </div>
+                </div>
+
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
                     <button type="button" class="secondary" onclick="closeModal('appointmentModal')">Cancel</button>
                     <button type="submit">Save Appointment</button>
@@ -524,30 +579,31 @@
         </div>
     </div>
 
-    <!-- Create User Modal -->
+    <!-- Create/Edit User Modal -->
     <div id="userModal" class="modal-overlay">
         <div class="modal">
-            <h3 style="margin-bottom: 16px;">Add New User</h3>
-            <form id="userForm" onsubmit="createUser(event)">
+            <h3 id="userModalTitle" style="margin-bottom: 16px;">Add New User</h3>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <input type="hidden" id="userEditId">
                 <div class="form-group">
-                    <label>User ID</label>
-                    <input type="number" id="newUserId" required placeholder="e.g. 102">
+                    <label>Chart # (User ID — Optional)</label>
+                    <input type="number" id="newUserId" placeholder="Leave blank to auto-generate">
                 </div>
                 <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="newUserName" required placeholder="Jane Smith">
+                    <label>Name (Format: Lastname, Firstname)</label>
+                    <input type="text" id="newUserName" required placeholder="Doe, John">
                 </div>
                 <div class="form-group">
                     <label>Preferred Name</label>
-                    <input type="text" id="newUserPrefName" placeholder="Jane">
+                    <input type="text" id="newUserPrefName" placeholder="Johnny">
                 </div>
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="text" id="newUserPhone" required placeholder="555-0142">
+                    <input type="tel" id="newUserPhone" required placeholder="555-0199">
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
                     <button type="button" class="secondary" onclick="closeModal('userModal')">Cancel</button>
-                    <button type="submit">Create User</button>
+                    <button type="submit">Save User</button>
                 </div>
             </form>
         </div>
@@ -575,7 +631,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Linked Responses (Select by trigger text)</label>
+                    <label>Linked Responses</label>
                     <div id="msgResponsesContainer" class="checkbox-group">
                         <!-- Populated dynamically -->
                     </div>
@@ -623,25 +679,42 @@
         let apptPage = 0;
         let userPage = 0;
         let logPage = 0;
+        let apptUserPickerPage = 0;
         const pageSize = 10;
         let availableResponsesCache = [];
+        let globalUsersCache = [];
+        let globalResponsesCache = [];
+        let globalMessagesCache = [];
 
         document.addEventListener("DOMContentLoaded", () => {
             checkHealth();
-            loadAppointments();
-            loadUsers();
-            loadMessages();
-            loadResponses();
-            loadLogs();
+            fetchAllReferenceData().then(() => {
+                loadAppointments();
+                loadUsers();
+                loadMessages();
+                loadResponses();
+                loadLogs();
+            });
             loadEnumDropdowns();
+
+            // Restore active tab from localStorage
+            const savedTab = localStorage.getItem('crm_active_tab') || 'appointments';
+            const menuEl = document.getElementById(`menu-${savedTab}`);
+            if (menuEl) {
+                switchTab(savedTab, menuEl, false);
+            }
         });
 
-        function switchTab(tabName, element) {
+        function switchTab(tabName, element, save = true) {
             document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             
             element.classList.add('active');
             document.getElementById(tabName + 'View').classList.add('active');
+
+            if (save) {
+                localStorage.setItem('crm_active_tab', tabName);
+            }
 
             const titles = {
                 appointments: 'Appointments',
@@ -656,7 +729,7 @@
             if(tabName === 'appointments') {
                 actionContainer.innerHTML = `<button onclick="openAppointmentModal()">+ New Appointment</button>`;
             } else if(tabName === 'users') {
-                actionContainer.innerHTML = `<button onclick="openModal('userModal')">+ Add User</button>`;
+                actionContainer.innerHTML = `<button onclick="openUserModal()">+ Add User</button>`;
             } else if(tabName === 'messages') {
                 actionContainer.innerHTML = `<button onclick="openMessageModal()">+ New Message</button>`;
             } else if(tabName === 'responses') {
@@ -668,6 +741,32 @@
 
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        function formatPhoneNumber(inputVal) {
+            let cleaned = inputVal.replace(/\D/g, '');
+            if (cleaned.length === 10) {
+                return `+1${cleaned}`;
+            } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+                return `+1${cleaned.substring(1)}`;
+            }
+            return inputVal.startsWith('+') ? inputVal : `+1${cleaned}`;
+        }
+
+        async function fetchAllReferenceData() {
+            try {
+                const res = await fetch(`/api/users/get_all_users?page=0&pageSize=1000`);
+                const data = await res.json();
+                globalUsersCache = data.content || (Array.isArray(data) ? data : []);
+
+                const resList = await fetch('/api/messages/responses');
+                globalResponsesCache = await resList.json();
+
+                const msgList = await fetch('/api/messages');
+                globalMessagesCache = await msgList.json();
+            } catch (e) {
+                console.error("Error pre-fetching reference datasets", e);
+            }
+        }
 
         async function loadEnumDropdowns() {
             try {
@@ -702,6 +801,7 @@
         // --- APPOINTMENTS API ---
         async function loadAppointments() {
             try {
+                await fetchAllReferenceData();
                 const res = await fetch(`/api/appointments?page=${apptPage}&size=${pageSize}`);
                 const data = await res.json();
                 const content = data.content || (Array.isArray(data) ? data : [data]);
@@ -718,10 +818,13 @@
                     if (appt.confirmed) statusBadge = '<span class="badge confirmed">Confirmed</span>';
                     else if (appt.cancelled) statusBadge = '<span class="badge cancelled">Cancelled</span>';
 
+                    const foundUser = globalUsersCache.find(u => u.id === appt.userId);
+                    const userDisplay = foundUser ? `${foundUser.name} (Chart #${foundUser.id})` : `ID: ${appt.userId}`;
+
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${appt.id}</td>
-                        <td>${appt.userId}</td>
+                        <td>${userDisplay}</td>
                         <td>${new Date(appt.time).toLocaleString()}</td>
                         <td>${statusBadge}</td>
                     `;
@@ -734,15 +837,76 @@
             }
         }
 
-        function openAppointmentModal(appt = null) {
+        async function loadApptUserPicker(pageIndex) {
+            apptUserPickerPage = Math.max(0, pageIndex);
+            try {
+                const res = await fetch(`/api/users/get_all_users?page=${apptUserPickerPage}&pageSize=5`);
+                const data = await res.json();
+                const users = data.content || [];
+                const container = document.getElementById('userDropdownList');
+                container.innerHTML = users.length ? users.map(u => `
+                    <div class="dropdown-item" onclick="selectApptUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')">
+                        ${u.name} (Chart #${u.id}) - ${u.phone}
+                    </div>
+                `).join('') : '<div style="padding: 8px; font-size:0.85rem; color:var(--text-muted);">No users found.</div>';
+                
+                document.getElementById('apptUserPageIndicator').innerText = `Page ${apptUserPickerPage}`;
+            } catch(e) {
+                console.error("Failed to load paginated users for appointment form", e);
+            }
+        }
+
+        function changeApptUserPickerPage(dir) {
+            loadApptUserPicker(apptUserPickerPage + dir);
+        }
+
+        function selectApptUser(userId, userName) {
+            document.getElementById('selectedUserId').value = userId;
+            document.getElementById('selectedUserDisplay').innerText = `Selected: ${userName} (Chart #${userId})`;
+            document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+
+        async function openAppointmentModal(appt = null) {
             document.getElementById('appointmentForm').reset();
             document.getElementById('apptEditId').value = '';
+            document.getElementById('selectedUserId').value = '';
+            document.getElementById('selectedUserDisplay').innerText = 'No user selected';
+
+            await fetchAllReferenceData();
+            loadApptUserPicker(0);
+
+            // Populate Milestones list (Messages with native day badges grabbed directly from the message configuration)
+            const milestonesContainer = document.getElementById('apptMilestonesContainer');
+            milestonesContainer.innerHTML = globalMessagesCache.length ? globalMessagesCache.map(m => `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px;">
+                    <label class="checkbox-item" style="margin: 0; flex: 1;">
+                        <input type="checkbox" name="milestoneMsgCheckbox" value="${m.id}" data-day="${m.dayMileStone || 1}">
+                        <span style="font-size:0.85rem;">Msg #${m.id}: "${m.text.substring(0, 35)}..."</span>
+                    </label>
+                    <span class="badge outbound" style="font-size: 0.7rem;">Day ${m.dayMileStone || 1}</span>
+                </div>
+            `).join('') : '<p style="font-size:0.85rem; color:var(--text-muted);">No messages available. Create messages first.</p>';
+
             if (appt) {
                 document.getElementById('appointmentModalTitle').innerText = 'Edit Appointment';
                 document.getElementById('apptEditId').value = appt.id;
-                document.getElementById('apptUserId').value = appt.userId;
                 document.getElementById('apptTime').value = appt.time ? appt.time.substring(0, 16) : '';
-                document.getElementById('apptMilestones').value = appt.mileStoneList ? appt.mileStoneList.join(', ') : '1, 3, 7';
+                document.getElementById('apptReason').value = appt.reason || '';
+                
+                if (appt.userId) {
+                    const foundU = globalUsersCache.find(u => u.id === appt.userId);
+                    document.getElementById('selectedUserId').value = appt.userId;
+                    document.getElementById('selectedUserDisplay').innerText = `Selected: ${foundU ? foundU.name : 'User'} (Chart #${appt.userId})`;
+                }
+
+                if (appt.mileStoneList && Array.isArray(appt.mileStoneList)) {
+                    // Match checkboxes whose day matches the milestone list values
+                    appt.mileStoneList.forEach(dayVal => {
+                        const cb = milestonesContainer.querySelector(`input[name="milestoneMsgCheckbox"][data-day="${dayVal}"]`);
+                        if (cb) cb.checked = true;
+                    });
+                }
             } else {
                 document.getElementById('appointmentModalTitle').innerText = 'Schedule Appointment';
             }
@@ -752,17 +916,40 @@
         async function saveAppointment(e) {
             e.preventDefault();
             const editId = document.getElementById('apptEditId').value;
-            const payload = {
-                userId: parseInt(document.getElementById('apptUserId').value),
+            const userIdVal = document.getElementById('selectedUserId').value;
+            const reasonVal = document.getElementById('apptReason').value;
+
+            if (!userIdVal) {
+                alert('Please select a user from the paginated list.');
+                return;
+            }
+
+            // Grab day milestones directly from the selected messages' native configuration values
+            const checkedBoxes = document.querySelectorAll('input[name="milestoneMsgCheckbox"]:checked');
+            const mileStoneList = Array.from(checkedBoxes).map(cb => parseInt(cb.getAttribute('data-day')) || 1);
+
+            let payload = {
+                userId: parseInt(userIdVal),
                 time: new Date(document.getElementById('apptTime').value).toISOString(),
-                mileStoneList: document.getElementById('apptMilestones').value.split(',').map(Number)
+                reason: reasonVal,
+                mileStoneList: mileStoneList.length ? mileStoneList : [1, 3, 7]
             };
 
-            // If updating, include ID if supported or use POST endpoint
-            if(editId) payload.id = parseInt(editId);
+            let url = '/api/appointments';
+            let method = 'POST';
 
-            const res = await fetch('/api/appointments', {
-                method: 'POST',
+            if(editId) {
+                // For update PUT requests per API specifications
+                payload = {
+                    time: new Date(document.getElementById('apptTime').value).toISOString(),
+                    reason: reasonVal
+                };
+                url = `/api/appointments/${editId}`;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -798,6 +985,9 @@
                 const logsData = await logsRes.json();
                 const appt = Array.isArray(apptData) ? apptData[0] : apptData;
 
+                const foundUser = globalUsersCache.find(u => u.id === appt.userId);
+                const userDisplay = foundUser ? `${foundUser.name} (Chart #${foundUser.id})` : `ID: ${appt.userId}`;
+
                 let logsHtml = logsData.length ? logsData.map(l => `
                     <div style="background: #f8fafc; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border);">
                         <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">
@@ -810,7 +1000,7 @@
 
                 detailContainer.innerHTML = `
                     <div style="margin-bottom: 16px;">
-                        <p style="font-size:0.9rem;"><strong>ID:</strong> ${appt.id} | <strong>User ID:</strong> ${appt.userId}</p>
+                        <p style="font-size:0.9rem;"><strong>ID:</strong> ${appt.id} | <strong>User:</strong> ${userDisplay}</p>
                         <p style="font-size:0.9rem; margin-top:4px;"><strong>Time:</strong> ${new Date(appt.time).toLocaleString()}</p>
                         <p style="font-size:0.9rem; margin-top:4px;"><strong>Reason:</strong> ${appt.reason || 'None'}</p>
                     </div>
@@ -847,7 +1037,7 @@
                 tbody.innerHTML = '';
 
                 if(content.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No users found.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No users found.</td></tr>`;
                     return;
                 }
 
@@ -858,6 +1048,9 @@
                             <td>${u.name}</td>
                             <td>${u.prefName || '-'}</td>
                             <td>${u.phone}</td>
+                            <td>
+                                <button class="secondary" style="padding:4px 8px; font-size:0.8rem;" onclick='openUserModalObj(${JSON.stringify(u)})'>Edit</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -867,17 +1060,53 @@
             }
         }
 
-        async function createUser(e) {
+        function openUserModal(user = null) {
+            document.getElementById('userForm').reset();
+            document.getElementById('userEditId').value = '';
+            if (user) {
+                document.getElementById('userModalTitle').innerText = 'Edit User';
+                document.getElementById('userEditId').value = user.id;
+                document.getElementById('newUserId').value = user.id;
+                document.getElementById('newUserName').value = user.name;
+                document.getElementById('newUserPrefName').value = user.prefName || '';
+                document.getElementById('newUserPhone').value = user.phone || '';
+            } else {
+                document.getElementById('userModalTitle').innerText = 'Add New User';
+            }
+            openModal('userModal');
+        }
+
+        function openUserModalObj(user) {
+            openUserModal(user);
+        }
+
+        async function saveUser(e) {
             e.preventDefault();
+            const editId = document.getElementById('userEditId').value;
+            const rawIdInput = document.getElementById('newUserId').value;
+            const formattedPhone = formatPhoneNumber(document.getElementById('newUserPhone').value);
+
             const payload = {
-                id: parseInt(document.getElementById('newUserId').value),
                 name: document.getElementById('newUserName').value,
                 prefName: document.getElementById('newUserPrefName').value,
-                phone: document.getElementById('newUserPhone').value
+                phone: formattedPhone
             };
 
-            const res = await fetch('/api/users/create_user', {
-                method: 'POST',
+            let url = '/api/users/create_user';
+            let method = 'POST';
+
+            if (rawIdInput) {
+                payload.id = parseInt(rawIdInput);
+            }
+
+            if (editId) {
+                payload.id = parseInt(editId);
+                url = `/api/users/update_user/${editId}`;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -885,9 +1114,9 @@
             if(res.ok) {
                 closeModal('userModal');
                 loadUsers();
-                document.getElementById('userForm').reset();
+                fetchAllReferenceData();
             } else {
-                alert('Failed to create user');
+                alert('Failed to save user');
             }
         }
 
@@ -899,23 +1128,33 @@
         // --- MESSAGES API ---
         async function loadMessages() {
             try {
+                await fetchAllReferenceData();
                 const res = await fetch('/api/messages');
                 const data = await res.json();
                 const tbody = document.getElementById('messagesTableBody');
                 tbody.innerHTML = '';
 
                 if(!Array.isArray(data) || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No messages found.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No messages found.</td></tr>`;
                     return;
                 }
 
                 data.forEach(m => {
+                    let responsesText = '-';
+                    if (m.responseIds && m.responseIds.length > 0) {
+                        responsesText = m.responseIds.map(rid => {
+                            const found = globalResponsesCache.find(r => r.id === rid);
+                            return found ? `"${found.text}"` : `ID:${rid}`;
+                        }).join(', ');
+                    }
+
                     tbody.innerHTML += `
                         <tr>
                             <td>${m.id}</td>
                             <td>Day ${m.dayMileStone}</td>
                             <td>${m.isBefore ? 'Before' : 'After'}</td>
                             <td>${m.text}</td>
+                            <td>${responsesText}</td>
                             <td>
                                 <button class="secondary" style="padding:4px 8px; font-size:0.8rem; margin-right:4px;" onclick='openMessageModalObj(${JSON.stringify(m)})'>Edit</button>
                                 <button class="danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteMessage(${m.id})">Delete</button>
@@ -932,7 +1171,6 @@
             document.getElementById('messageForm').reset();
             document.getElementById('msgEditId').value = '';
             
-            // Populate response checklists dynamically
             try {
                 const res = await fetch('/api/messages/responses');
                 availableResponsesCache = await res.json();
@@ -982,10 +1220,17 @@
                 responseIds: responseIds
             };
 
-            if(editId) payload.id = parseInt(editId);
+            let url = '/api/messages';
+            let method = 'POST';
 
-            const res = await fetch('/api/messages', {
-                method: 'POST',
+            if(editId) {
+                payload.id = parseInt(editId);
+                url = `/api/messages/${editId}`;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -1067,10 +1312,17 @@
                 action: document.getElementById('resAction').value
             };
 
-            if(editId) payload.id = parseInt(editId);
+            let url = '/api/messages/responses';
+            let method = 'POST';
 
-            const res = await fetch('/api/messages/responses', {
-                method: 'POST',
+            if(editId) {
+                payload.id = parseInt(editId);
+                url = `/api/messages/responses/${editId}`;
+                method = 'PUT';
+            }
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });

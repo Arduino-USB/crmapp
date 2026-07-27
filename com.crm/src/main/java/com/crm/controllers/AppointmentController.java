@@ -1,4 +1,4 @@
-package com.crm.controller;
+package com.crm.controllers;
 
 import com.crm.entites.Appointment;
 import com.crm.repos.AppointmentRepo;
@@ -21,15 +21,6 @@ public class AppointmentController {
         this.appointmentRepo = appointmentRepo;
     }
 
-    /**
-     * Fetch a specific appointment by ID using ?id=... 
-     * OR retrieve a paged list of appointments.
-     * 
-     * Examples:
-     * - GET /api/appointments?id=1
-     * - GET /api/appointments?page=0&size=10
-     * - GET /api/appointments?page=0&size=10&sort=id,desc
-     */
     @GetMapping
     public ResponseEntity<?> getAppointments(
             @RequestParam(required = false) Long id,
@@ -45,18 +36,28 @@ public class AppointmentController {
         return ResponseEntity.ok(page);
     }
 
-    /**
-     * Add/Create a new appointment with standard validation.
-     */
     @PostMapping
     public ResponseEntity<Appointment> createAppointment(@Valid @RequestBody Appointment appointment) {
         Appointment savedAppointment = appointmentRepo.save(appointment);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedAppointment);
     }
 
-    /**
-     * Delete an appointment by ID.
-     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Appointment> updateAppointment(@PathVariable Long id, @RequestBody Appointment updatedDetails) {
+        return appointmentRepo.findById(id)
+                .map(existingAppointment -> {
+                    if (updatedDetails.getTime() != null) {
+                        existingAppointment.setTime(updatedDetails.getTime());
+                    }
+                    if (updatedDetails.getReason() != null) {
+                        existingAppointment.setReason(updatedDetails.getReason());
+                    }
+                    Appointment saved = appointmentRepo.save(existingAppointment);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/{id}")
     public ResponseEntity<Void> deleteAppointment(@PathVariable Long id) {
         if (!appointmentRepo.existsById(id)) {

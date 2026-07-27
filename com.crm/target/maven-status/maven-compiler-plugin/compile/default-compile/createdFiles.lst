@@ -17,7 +17,7 @@ com/crm/enums/ResponseAction.class
 com/crm/ActionMgr.class
 com/crm/HTTPWrapper.class
 com/crm/entites/Message.class
-com/crm/controller/AppointmentController.class
+com/crm/controllers/AppointmentController.class
 com/crm/AppointmentSync.class
 com/crm/entites/Appointment.class
 com/crm/repos/ResponseRepo.class
