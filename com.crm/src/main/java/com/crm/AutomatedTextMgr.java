@@ -4,6 +4,7 @@ import com.crm.entites.Appointment;
 import com.crm.entites.Message;
 import com.crm.entites.Response;
 import com.crm.entites.User;
+import com.crm.entites.Message.VarType;
 import com.crm.entites.SmsLog;
 import com.crm.enums.ResponseAction;
 import com.crm.repos.AppointmentRepo;
@@ -17,6 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
@@ -64,6 +66,65 @@ public class AutomatedTextMgr {
             }
         }).start();
     }
+
+
+	private String parseText(User user, Appointment appointment, List<Object> textObjs) {
+		
+		String finalText = "";
+		String varContents = null;
+			
+		for (int i = 0; i < textObjs.size(); i++) {
+			Object currentTextObj = textObjs.get(0);
+			if (currentTextObj instanceof Message.TextBlock) {
+				Message.TextBlock textBlock = (Message.TextBlock) currentTextObj;
+				
+				System.out.println("[AutomatedTextMgr].Parser Appending " + textBlock.text + " to final text");
+				finalText  = finalText + textBlock.text;
+			} else if (currentTextObj instanceof Message.IfElseBlock) {
+				Message.IfElseBlock ifElseBlock = (Message.IfElseBlock) currentTextObj;
+				
+				
+				if (ifElseBlock.varType == VarType.USER_VAR) {
+					varContents = user.getVar(ifElseBlock.varName);
+	
+				} else if (ifElseBlock.varType == VarType.APPOINTMENT_VAR) {
+					varContents = appointment.getVar(ifElseBlock.varName);	
+				}
+	
+				if (varContents != null) {
+					System.out.println("[AutomatedTextMgr].Parser Varible '" + ifElseBlock.varName  + "' is defined in '" + ifElseBlock.varType + "'. Appending");
+					List<Integer> insertedIndexes = new ArrayList<>();		
+				
+					for (int j = 0; j < ifElseBlock.ifText.size(); j++) {
+						//here we are checking if we need to inject the varContent varible into current index.
+						boolean insertVar = false;
+						for (int k = 0; k < ifElseBlock.insertIndexes.length; k++) {
+							if (j == ifElseBlock.insertIndexes[k] && !(insertedIndexes.contains(j))) {
+								insertVar = true;
+							}
+						}
+					
+						if (insertVar) {
+							System.out.println("[AutomatedTextMgr].Parser Injecting varContent into finalText");	
+							finalText = finalText + varContents;
+							// becuase we didnt actually insert that yet, and we still need to 
+							insertedIndexes.add(j);
+							j--;
+							continue;
+						} else {
+							finalText = finalText + ifElseBlock.ifText.get(j);
+						}		
+					}		
+			
+				}							
+	
+					
+			}
+		}
+		
+		return finalText;
+	}	
+
 
     private void runWorkerLoop() {
         List<Appointment> appointments = appointmentRepo.findAppointmentPhoneNotBlank();
@@ -158,8 +219,13 @@ public class AutomatedTextMgr {
                     }
 
                     User user = userOpt.get();
+	
+					// Parse the text message
+	
 
-                    Long textId = textMgr.sendText(user.getPhone(), msg.getText());
+					String textMessage = parseText(user, appointment, msg.getTextList());
+	
+                    Long textId = textMgr.sendText(user.getPhone(), textMessage);
                     System.out.println("[AutomatedTextMgr] [OUTBOUND SUCCESS] Sent text ID: " + textId + " to Appt ID: " + appointment.getId());
 
                     smsLogRepo.save(new SmsLog(
@@ -167,7 +233,7 @@ public class AutomatedTextMgr {
                         user.getId(),
                         user.getPhone(),
                         "OUTBOUND",
-                        msg.getText(),
+                        textMessage,
                         textId
                     ));                
 

@@ -589,18 +589,18 @@
                     <label>Chart # (User ID — Optional)</label>
                     <input type="number" id="newUserId" placeholder="Leave blank to auto-generate">
                 </div>
-                <div class="form-group">
-                    <label>Name (Format: Lastname, Firstname)</label>
-                    <input type="text" id="newUserName" required placeholder="Doe, John">
-                </div>
+				<div class="form-group">
+					<label>Name (Format: Last, First)</label>
+					<input type="text" id="newUserName" required pattern="^[\w\s\-]+,\s*[\w\s\-]+$" placeholder="Doe, John" title="Must be in format Last, First">
+				</div>
                 <div class="form-group">
                     <label>Preferred Name</label>
                     <input type="text" id="newUserPrefName" placeholder="Johnny">
                 </div>
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel" id="newUserPhone" required placeholder="555-0199">
-                </div>
+				<div class="form-group">
+					<label>Phone Number (Format: +1xxxxxxxxxx)</label>
+					<input type="tel" id="newUserPhone" required pattern="^\+1\d{10}$" placeholder="+1555019999" title="Must be in format +1xxxxxxxxxx">
+				</div>
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px;">
                     <button type="button" class="secondary" onclick="closeModal('userModal')">Cancel</button>
                     <button type="submit">Save User</button>
@@ -742,16 +742,15 @@
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-        function formatPhoneNumber(inputVal) {
-            let cleaned = inputVal.replace(/\D/g, '');
-            if (cleaned.length === 10) {
-                return `+1${cleaned}`;
-            } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
-                return `+1${cleaned.substring(1)}`;
-            }
-            return inputVal.startsWith('+') ? inputVal : `+1${cleaned}`;
-        }
-
+		function formatPhoneNumber(inputVal) {
+			let cleaned = inputVal.replace(/\D/g, '');
+			if (cleaned.length === 10) {
+				return `+1${cleaned}`;
+			} else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+				return `+${cleaned}`;
+			}
+			return inputVal;
+		}
         async function fetchAllReferenceData() {
             try {
                 const res = await fetch(`/api/users/get_all_users?page=0&pageSize=1000`);

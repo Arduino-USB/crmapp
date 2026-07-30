@@ -5,6 +5,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.Map;
+import java.util.HashMap;
+
 @Entity
 @Table(name = "users") // Maps this class to the "users" table in Postgres
 public class User {
@@ -20,6 +23,7 @@ public class User {
 
     private String prefName = "";
 
+	private Map<String, String> varibles = new HashMap<>();
     // Constructors
     public User() {
     }
@@ -63,6 +67,14 @@ public class User {
     public void setPhone(String phone) { 
         this.phone = phone; 
     }
+
+	public void setVar(String varName, String varContent) {
+		this.varibles.put(varName, varContent);
+	}
+	
+	public String getVar(String varName) {
+		this.varibles.get(varName);	
+	}
 
     @Override
     public String toString() {

@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "appointments")
@@ -39,12 +41,16 @@ public class Appointment {
 
     @ElementCollection(fetch = FetchType.EAGER)
     private List<Integer> mileStoneList = new ArrayList<>();
+	
+	private Map<String, String> varibles = new HashMap<>();
 
     private Instant lastTextSent;
 
     private Long currentTextId;
 
     private String reason = "";
+	
+	private 
 
     // Getters and Setters
 
@@ -156,4 +162,12 @@ public class Appointment {
     public void setStopTexting(boolean stopTexting) {
         this.stopTexting = stopTexting;
     }
+		
+	public void setVar(String varName, String varContent) {
+		this.varibles.put(varName, varContent);
+	}
+	
+	public String getVar(String varName) {
+		this.varibles.get(varName);	
+	}
 }

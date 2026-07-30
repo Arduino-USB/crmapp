@@ -16,6 +16,39 @@ import java.util.List;
 @Entity
 @Table(name = "messages")
 public class Message {
+	
+	public enum VarType {
+		USER_VAR,
+		APPOINTMENT_VAR
+	}
+
+	public class TextBlock {
+		public TextBlock(String text) {
+			this.text = text;		
+		}
+		
+
+
+		public String text;
+	}
+		
+	public class IfElseBlock {	
+		
+		public IfElseBlock (VarType varType, String varName, List<String> ifText, Integer[] insertIndexes,String elseText) {
+			this.varType = varType;
+			this.varName = varName;
+			this.ifText = ifText;
+			this.elseText = elseText;	
+			this.insertIndexes = insertIndexes;
+		}	
+		
+
+		public VarType varType;
+		public String varName;
+		public List<String> ifText;
+		public Integer[] insertIndexes;
+		public String elseText;
+	}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +57,9 @@ public class Message {
     private String text;
 
     private int dayMileStone;
+	
+	
+	private List<Object> textObjs = new ArrayList<>();
 
 	@JsonProperty("isBefore")
     private boolean isBefore; // true = x days before, false = x days after
@@ -51,13 +87,18 @@ public class Message {
         this.id = id;
     }
 
-    public String getText() {
-        return text;
-    }
 
-    public void setText(String text) {
-        this.text = text;
-    }
+	public void addText(String text) {
+		textObjs.add(new TextBlock(text));
+	}
+
+	public void addIfElse(VarType varType, String varName, String ifText, String elseText) {
+		textObjs.add(new IfElseBlock(varType, varName, ifText, elseText));
+	}
+	
+	public List<Object> getTextList() {
+		return this.textObjs;	
+	}
 
     public int getDayMileStone() {
         return dayMileStone;
