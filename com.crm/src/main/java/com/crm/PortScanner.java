@@ -19,6 +19,10 @@ public class PortScanner {
 		
 		Map<String,Future<Boolean>> futures = new HashMap<>();
 		String ip = NetworkMgr.get_ip();
+		if (ip == null) {
+			System.out.println("[PortScanner] User is not connected to any network");
+			return new ArrayList<String>();
+		}
 		int total_ips = 1 << (32 - NetworkMgr.get_subnet());
 		
 
