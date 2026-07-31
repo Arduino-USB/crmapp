@@ -16,6 +16,8 @@
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/controllers/MessageController.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/controllers/SmsLogController.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/controllers/UserApiController.java
+/home/x86debug/crmapp/com.crm/src/main/java/com/crm/embeds/TextBlock.java
+/home/x86debug/crmapp/com.crm/src/main/java/com/crm/embeds/Varible.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/entites/Appointment.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/entites/Message.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/entites/Reminder.java

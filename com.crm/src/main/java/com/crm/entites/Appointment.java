@@ -1,5 +1,7 @@
 package com.crm.entites;
 
+import com.crm.embeds.*;
+
 import jakarta.validation.constraints.*;
 import jakarta.persistence.*;
 
@@ -12,6 +14,7 @@ import java.util.Map;
 @Entity
 @Table(name = "appointments")
 public class Appointment {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,17 +43,16 @@ public class Appointment {
     private boolean stopTexting = false;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    private List<Integer> mileStoneList = new ArrayList<>();
+    private List<Integer> mileStoneList = new ArrayList<>();	
 	
-	private Map<String, String> varibles = new HashMap<>();
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<Varible> varibles = new ArrayList<>();
 
     private Instant lastTextSent;
 
     private Long currentTextId;
 
     private String reason = "";
-	
-	private 
 
     // Getters and Setters
 
@@ -164,10 +166,28 @@ public class Appointment {
     }
 		
 	public void setVar(String varName, String varContent) {
-		this.varibles.put(varName, varContent);
+		for (int i = 0; i < varibles.size(); i++) {
+			Varible currentVar = varibles.get(i);
+			if (currentVar.varName.equals(varName)) {
+				currentVar.varContents = varContent;	
+				return;
+			}
+		}
+		
+		varibles.add(new Varible(varName, varContent));
+		//this.varibles.put(varName, varContent);
 	}
 	
 	public String getVar(String varName) {
-		this.varibles.get(varName);	
+		for (int i = 0; i < varibles.size(); i++) {
+			Varible currentVar = varibles.get(i);
+			if (currentVar.varName.equals(varName)) {  	
+				return currentVar.varContents;
+			}
+		
+		}
+		
+		return null;
+		//this.varibles.get(varName);	
 	}
 }

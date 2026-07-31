@@ -50,7 +50,7 @@ public class MessageController {
     public ResponseEntity<Message> updateMessage(@PathVariable Long id, @Valid @RequestBody Message updatedMessage) {
         return messageRepo.findById(id)
                 .map(existingMessage -> {
-                    existingMessage.setText(updatedMessage.getText());
+                    existingMessage.setTextList(updatedMessage.getTextList());
                     existingMessage.setDayMileStone(updatedMessage.getDayMileStone());
                     existingMessage.setBefore(updatedMessage.isBefore());
 					existingMessage.setResponseIds(updatedMessage.getResponseIds());

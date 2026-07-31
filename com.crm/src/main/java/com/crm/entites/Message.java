@@ -1,14 +1,11 @@
 package com.crm.entites;
 
+import com.crm.embeds.*;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.validation.constraints.*;
+import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,50 +13,15 @@ import java.util.List;
 @Entity
 @Table(name = "messages")
 public class Message {
-	
-	public enum VarType {
-		USER_VAR,
-		APPOINTMENT_VAR
-	}
-
-	public class TextBlock {
-		public TextBlock(String text) {
-			this.text = text;		
-		}
-		
-
-
-		public String text;
-	}
-		
-	public class IfElseBlock {	
-		
-		public IfElseBlock (VarType varType, String varName, List<String> ifText, Integer[] insertIndexes,String elseText) {
-			this.varType = varType;
-			this.varName = varName;
-			this.ifText = ifText;
-			this.elseText = elseText;	
-			this.insertIndexes = insertIndexes;
-		}	
-		
-
-		public VarType varType;
-		public String varName;
-		public List<String> ifText;
-		public Integer[] insertIndexes;
-		public String elseText;
-	}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String text;
-
     private int dayMileStone;
 	
-	
-	private List<Object> textObjs = new ArrayList<>();
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<TextBlock> textObjs = new ArrayList<>();
 
 	@JsonProperty("isBefore")
     private boolean isBefore; // true = x days before, false = x days after
@@ -69,9 +31,9 @@ public class Message {
 
     public Message() {}
 
-    public Message(Long id, String text, int dayMileStone, boolean isBefore, List<Long> responseIds) {
+    public Message(Long id, List<TextBlock> textObjs, int dayMileStone, boolean isBefore, List<Long> responseIds) {
         this.id = id;
-        this.text = text;
+        this.textObjs = textObjs;
         this.dayMileStone = dayMileStone;
         this.isBefore = isBefore;
         if (responseIds != null) {
@@ -92,12 +54,16 @@ public class Message {
 		textObjs.add(new TextBlock(text));
 	}
 
-	public void addIfElse(VarType varType, String varName, String ifText, String elseText) {
-		textObjs.add(new IfElseBlock(varType, varName, ifText, elseText));
+	public void addIfElse(TextBlock.VarType varType, String varName, List<String> ifText, Integer[] insertIndexes, String elseText) {
+		textObjs.add(new TextBlock(varType, varName, ifText, insertIndexes, elseText));
 	}
 	
-	public List<Object> getTextList() {
+	public List<TextBlock> getTextList() {
 		return this.textObjs;	
+	}
+
+	public void setTextList(List<TextBlock> textObjs) {
+		this.textObjs = textObjs;	
 	}
 
     public int getDayMileStone() {

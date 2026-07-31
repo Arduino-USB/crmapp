@@ -1,12 +1,12 @@
 package com.crm.entites;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
+import com.crm.embeds.*;
 
-import java.util.Map;
-import java.util.HashMap;
+import jakarta.validation.constraints.*;
+import jakarta.persistence.*;
+
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "users") // Maps this class to the "users" table in Postgres
@@ -22,8 +22,10 @@ public class User {
     private String phone;
 
     private String prefName = "";
-
-	private Map<String, String> varibles = new HashMap<>();
+	
+	
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<Varible> varibles = new ArrayList<>();
     // Constructors
     public User() {
     }
@@ -69,11 +71,29 @@ public class User {
     }
 
 	public void setVar(String varName, String varContent) {
-		this.varibles.put(varName, varContent);
+		for (int i = 0; i < varibles.size(); i++) {
+			Varible currentVar = varibles.get(i);
+			if (currentVar.varName.equals(varName)) {
+				currentVar.varContents = varContent;	
+				return;
+			}
+		}
+		
+		varibles.add(new Varible(varName, varContent));
+		//this.varibles.put(varName, varContent);
 	}
 	
 	public String getVar(String varName) {
-		this.varibles.get(varName);	
+		for (int i = 0; i < varibles.size(); i++) {
+			Varible currentVar = varibles.get(i);
+			if (currentVar.varName.equals(varName)) {  	
+				return currentVar.varContents;
+			}
+		
+		}
+		
+		return null;
+		//this.varibles.get(varName);	
 	}
 
     @Override

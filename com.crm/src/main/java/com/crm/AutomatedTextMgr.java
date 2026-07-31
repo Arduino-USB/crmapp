@@ -1,10 +1,11 @@
 package com.crm;
 
+import com.crm.embeds.*;
+
 import com.crm.entites.Appointment;
 import com.crm.entites.Message;
 import com.crm.entites.Response;
 import com.crm.entites.User;
-import com.crm.entites.Message.VarType;
 import com.crm.entites.SmsLog;
 import com.crm.enums.ResponseAction;
 import com.crm.repos.AppointmentRepo;
@@ -68,38 +69,35 @@ public class AutomatedTextMgr {
     }
 
 
-	private String parseText(User user, Appointment appointment, List<Object> textObjs) {
+	private String parseText(User user, Appointment appointment, List<TextBlock> textObjs) {
 		
 		String finalText = "";
 		String varContents = null;
 			
 		for (int i = 0; i < textObjs.size(); i++) {
-			Object currentTextObj = textObjs.get(0);
-			if (currentTextObj instanceof Message.TextBlock) {
-				Message.TextBlock textBlock = (Message.TextBlock) currentTextObj;
+			TextBlock textBlock = textObjs.get(0);
+			if (textBlock.mode == TextBlock.Mode.TEXT) {
 				
-				System.out.println("[AutomatedTextMgr].Parser Appending " + textBlock.text + " to final text");
-				finalText  = finalText + textBlock.text;
-			} else if (currentTextObj instanceof Message.IfElseBlock) {
-				Message.IfElseBlock ifElseBlock = (Message.IfElseBlock) currentTextObj;
+				System.out.println("[AutomatedTextMgr].Parser Appending " + textBlock.plainText + " to final text");
+				finalText  = finalText + textBlock.plainText;
+			} else if (textBlock.mode == TextBlock.Mode.IFELSE) {
 				
-				
-				if (ifElseBlock.varType == VarType.USER_VAR) {
-					varContents = user.getVar(ifElseBlock.varName);
+				if (textBlock.varType == TextBlock.VarType.USER_VAR) {
+					varContents = user.getVar(textBlock.varName);
 	
-				} else if (ifElseBlock.varType == VarType.APPOINTMENT_VAR) {
-					varContents = appointment.getVar(ifElseBlock.varName);	
+				} else if (textBlock.varType == TextBlock.VarType.APPOINTMENT_VAR) {
+					varContents = appointment.getVar(textBlock.varName);	
 				}
 	
 				if (varContents != null) {
-					System.out.println("[AutomatedTextMgr].Parser Varible '" + ifElseBlock.varName  + "' is defined in '" + ifElseBlock.varType + "'. Appending");
+					System.out.println("[AutomatedTextMgr].Parser Varible '" + textBlock.varName  + "' is defined in '" + textBlock.varType + "'. Appending");
 					List<Integer> insertedIndexes = new ArrayList<>();		
 				
-					for (int j = 0; j < ifElseBlock.ifText.size(); j++) {
+					for (int j = 0; j < textBlock.ifText.size(); j++) {
 						//here we are checking if we need to inject the varContent varible into current index.
 						boolean insertVar = false;
-						for (int k = 0; k < ifElseBlock.insertIndexes.length; k++) {
-							if (j == ifElseBlock.insertIndexes[k] && !(insertedIndexes.contains(j))) {
+						for (int k = 0; k < textBlock.insertIndexes.length; k++) {
+							if (j == textBlock.insertIndexes[k] && !(insertedIndexes.contains(j))) {
 								insertVar = true;
 							}
 						}
@@ -112,7 +110,7 @@ public class AutomatedTextMgr {
 							j--;
 							continue;
 						} else {
-							finalText = finalText + ifElseBlock.ifText.get(j);
+							finalText = finalText + textBlock.ifText.get(j);
 						}		
 					}		
 			
