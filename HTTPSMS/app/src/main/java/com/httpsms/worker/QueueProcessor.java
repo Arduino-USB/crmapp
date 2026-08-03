@@ -1,6 +1,11 @@
 package com.httpsms.worker;
 
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 import com.httpsms.database.AppDatabase;
@@ -47,7 +52,6 @@ public class QueueProcessor implements Runnable {
                 Log.v(TAG, "Checking database for pending jobs. Current system time (epoch ms): " + now);
                 
                 List<SmsJob> pending = db.jobDao().getPendingJobs(now);
-
                 if (pending != null && !pending.isEmpty()) {
                     Log.i(TAG, "Found " + pending.size() + " pending job(s) scheduled on or before now.");
                     
@@ -57,24 +61,60 @@ public class QueueProcessor implements Runnable {
                         if ("sms".equalsIgnoreCase(job.msgType)) {
                             try {
                                 Log.d(TAG, "Attempting to send SMS text to " + job.toNumber);
-                                smsManager.sendTextMessage(job.toNumber, null, job.text, null, null);
-                                Log.i(TAG, "SmsManager.sendTextMessage completed for Job ID: " + job.id);
+                                String SENT_ACTION = "com.httpsms.SMS_SENT_" + job.id + "_" + System.currentTimeMillis();
                                 
-                                job.status = "sent";
-                                db.jobDao().update(job);
-                                Log.d(TAG, "Job ID: " + job.id + " status updated to 'sent' in database.");
+                                Intent sentIntent = new Intent(SENT_ACTION);
+                                sentIntent.setPackage(context.getPackageName());
+                                PendingIntent sentPendingIntent = PendingIntent.getBroadcast(
+                                    context, 
+                                    (int) job.id, 
+                                    sentIntent, 
+                                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                                );
 
-                                MessageLog log = new MessageLog();
-                                log.message = job.text;
-                                log.type = "sms";
-                                log.direction = "outgoing";
-                                log.time = System.currentTimeMillis();
-                                log.number = job.toNumber;
-                                db.logDao().insert(log);
-                                Log.d(TAG, "MessageLog record inserted for Job ID: " + job.id);
+                                // Register a runtime receiver for this specific broadcast to catch radio/network failures
+                                context.registerReceiver(new BroadcastReceiver() {
+                                    @Override
+                                    public void onReceive(Context ctx, Intent intent) {
+                                        try {
+                                            context.unregisterReceiver(this);
+                                        } catch (Exception ignored) {}
 
+                                        // Run database operations off the main thread to prevent IllegalStateException
+                                        new Thread(() -> {
+                                            SmsJob currentJob = db.jobDao().getJobById(job.id);
+                                            if (currentJob == null) return;
+
+                                            if (getResultCode() == Activity.RESULT_OK) {
+                                                Log.i(TAG, "SMS successfully sent for Job ID: " + job.id);
+                                                currentJob.status = "sent";
+                                                db.jobDao().update(currentJob);
+                                                Log.d(TAG, "Job ID: " + job.id + " status updated to 'sent' in database.");
+
+                                                MessageLog log = new MessageLog();
+                                                log.message = job.text;
+                                                log.type = "sms";
+                                                log.direction = "outgoing";
+                                                log.time = System.currentTimeMillis();
+                                                log.number = job.toNumber;
+                                                db.logDao().insert(log);
+                                                Log.d(TAG, "MessageLog record inserted for Job ID: " + job.id);
+                                            } else {
+                                                String errorReason = getSmsErrorReason(getResultCode());
+                                                Log.e(TAG, "SMS failed for Job ID: " + job.id + " | Reason: " + errorReason);
+                                                
+                                                currentJob.status = "failed";
+                                                db.jobDao().update(currentJob);
+                                                Log.d(TAG, "Job ID: " + job.id + " status updated to 'failed' in database.");
+                                            }
+                                        }).start();
+                                    }
+                                }, new IntentFilter(SENT_ACTION));
+
+                                smsManager.sendTextMessage(job.toNumber, null, job.text, sentPendingIntent, null);
+                                Log.i(TAG, "SmsManager.sendTextMessage dispatched for Job ID: " + job.id);
                             } catch (Exception e) {
-                                Log.e(TAG, "Failed to send SMS for Job ID: " + job.id + ". Error: " + e.getMessage(), e);
+                                Log.e(TAG, "Failed to dispatch SMS for Job ID: " + job.id + ". Error: " + e.getMessage(), e);
                                 job.status = "failed";
                                 db.jobDao().update(job);
                                 Log.d(TAG, "Job ID: " + job.id + " status updated to 'failed' in database.");
@@ -115,5 +155,20 @@ public class QueueProcessor implements Runnable {
             }
         }
         Log.d(TAG, "QueueProcessor worker thread exited fully.");
+    }
+
+    private String getSmsErrorReason(int resultCode) {
+        switch (resultCode) {
+            case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                return "Generic failure";
+            case SmsManager.RESULT_ERROR_NO_SERVICE:
+                return "No service / No cellular connection";
+            case SmsManager.RESULT_ERROR_NULL_PDU:
+                return "Null PDU";
+            case SmsManager.RESULT_ERROR_RADIO_OFF:
+                return "Radio explicitly powered off";
+            default:
+                return "Unknown error code: " + resultCode;
+        }
     }
 }

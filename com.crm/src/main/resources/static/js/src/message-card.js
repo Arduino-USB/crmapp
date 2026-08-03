@@ -227,7 +227,6 @@ export class MessageCard extends LitElement {
       background: var(--secondary-hover);
     }
 
-    /* IFELSE Component Row Layout Styles */
     .ifelse-row {
       display: flex;
       align-items: center;
@@ -349,11 +348,18 @@ export class MessageCard extends LitElement {
     varTypes: {type: Array},
     showEditPopup: {state: true},
     showDeletePopup: {state: true},
+    showCreatePopup: {state: true},
     formMilestone: {state: true},
     formIsBefore: {state: true},
     formTextList: {state: true},
     formResponseIds: {state: true},
-    previewStates: {state: true}
+    previewStates: {state: true},
+    
+    // Creation popup form states
+    createMilestone: {state: true},
+    createIsBefore: {state: true},
+    createTextList: {state: true},
+    createResponseIds: {state: true}
   };
 
   constructor() {
@@ -367,11 +373,19 @@ export class MessageCard extends LitElement {
     this.varTypes = [];
     this.showEditPopup = false;
     this.showDeletePopup = false;
+    this.showCreatePopup = false;
     this.formMilestone = 0;
     this.formIsBefore = true;
     this.formTextList = [];
     this.formResponseIds = [];
     this.previewStates = {};
+
+    // Creation form defaults
+    this.createMilestone = 0;
+    this.createIsBefore = true;
+    this.createTextList = [{ mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' }];
+    this.createResponseIds = [];
+
     this.updateInterval = null;
   }
 
@@ -502,12 +516,12 @@ export class MessageCard extends LitElement {
 
               <label>If Text Layout:</label>
               <div style="margin-top: 4px;">
-                ${this.renderIfTextRows(block, index)}
+                ${this.renderIfTextRows(block, index, false)}
               </div>
 
               <div class="ifelse-actions">
-                <button type="button" @click="${() => this.addIfTextSentence(index)}">+ Add Text</button>
-                <button type="button" @click="${() => this.addIfTextVariable(index)}">+ Insert Variable</button>
+                <button type="button" @click="${() => this.addIfTextSentence(index, false)}">+ Add Text</button>
+                <button type="button" @click="${() => this.addIfTextVariable(index, false)}">+ Insert Variable</button>
               </div>
 
               <label>Else Text (Fallback):</label>
@@ -532,22 +546,22 @@ export class MessageCard extends LitElement {
           </div>
         `)}
 
-        <button type="button" class="add-block-btn" @click="${this.addFormBlock}">+ Add Text Block</button>
+        <button type="button" class="add-block-btn" @click="${() => this.addFormBlock(false)}">+ Add Text Block</button>
 
         <label>Associated Responses:</label>
         <div class="linked-responses-container">
           ${this.formResponseIds.map((resId, index) => html`
             <div class="linked-response-row">
-              <select @change="${e => this.updateLinkedResponse(index, parseInt(e.target.value, 10))}">
+              <select @change="${e => this.updateLinkedResponse(index, parseInt(e.target.value, 10), false)}">
                 <option value="">Select Response Trigger</option>
                 ${this.allResponses.map(resp => html`
                   <option value="${resp.id}" ?selected="${resp.id === resId}">${resp.text}</option>
                 `)}
               </select>
-              <button type="button" class="row-delete-btn" @click="${() => this.removeLinkedResponse(index)}">×</button>
+              <button type="button" class="row-delete-btn" @click="${() => this.removeLinkedResponse(index, false)}">×</button>
             </div>
           `)}
-          <button type="button" class="link-new-btn" @click="${this.addLinkedResponse}">Link New Response</button>
+          <button type="button" class="link-new-btn" @click="${() => this.addLinkedResponse(false)}">Link New Response</button>
         </div>
 
         <div class="buttonContainer">
@@ -558,7 +572,108 @@ export class MessageCard extends LitElement {
     `;
   }
 
-  renderIfTextRows(block, blockIndex) {
+  renderCreatePopup() {
+    if (!this.showCreatePopup) return html``;
+
+    return html`
+      <div class="editMessagePopup">
+        <p style="font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Create Message</p>
+        
+        <label>Milestone (Days):</label>
+        <input 
+          type="number" 
+          .value="${this.createMilestone}" 
+          @input="${e => this.createMilestone = parseInt(e.target.value, 10) || 0}"
+        >
+
+        <label>Timing:</label>
+        <select .value="${String(this.createIsBefore)}" @change="${e => this.createIsBefore = e.target.value === 'true'}">
+          <option value="true">Before Appointment</option>
+          <option value="false">After Appointment</option>
+        </select>
+
+        <label style="margin-top: 8px; display: block; font-weight: 600;">Text Blocks:</label>
+        ${this.createTextList.map((block, index) => html`
+          <div class="block-container">
+            <div class="block-header">
+              <label>Block #${index + 1} (${block.mode})</label>
+              <button type="button" class="remove-block-btn" @click="${() => this.removeFormBlock(true)}">Remove</button>
+            </div>
+            
+            <label>Mode:</label>
+            <select .value="${block.mode}" @change="${e => this.updateBlockField(index, 'mode', e.target.value, true)}">
+              <option value="TEXT">TEXT</option>
+              <option value="IFELSE">IFELSE</option>
+            </select>
+
+            ${block.mode === 'TEXT' ? html`
+              <label>Plain Text:</label>
+              <textarea 
+                rows="2" 
+                .value="${block.plainText || ''}" 
+                @input="${e => this.updateBlockField(index, 'plainText', e.target.value, true)}"
+              ></textarea>
+            ` : html`
+              <label>Var Type:</label>
+              <select .value="${block.varType || ''}" @change="${e => this.updateBlockField(index, 'varType', e.target.value, true)}">
+                <option value="">Select VarType</option>
+                ${this.varTypes.map(vt => html`<option value="${vt}">${vt}</option>`)}
+              </select>
+
+              <label>Var Name:</label>
+              <input 
+                type="text" 
+                .value="${block.varName || ''}" 
+                @input="${e => this.updateBlockField(index, 'varName', e.target.value, true)}"
+              >
+
+              <label>If Text Layout:</label>
+              <div style="margin-top: 4px;">
+                ${this.renderIfTextRows(block, index, true)}
+              </div>
+
+              <div class="ifelse-actions">
+                <button type="button" @click="${() => this.addIfTextSentence(index, true)}">+ Add Text</button>
+                <button type="button" @click="${() => this.addIfTextVariable(index, true)}">+ Insert Variable</button>
+              </div>
+
+              <label>Else Text (Fallback):</label>
+              <input 
+                type="text" 
+                .value="${block.elseText || ''}" 
+                @input="${e => this.updateBlockField(index, 'elseText', e.target.value, true)}"
+              >
+            `}
+          </div>
+        `)}
+
+        <button type="button" class="add-block-btn" @click="${() => this.addFormBlock(true)}">+ Add Text Block</button>
+
+        <label>Associated Responses:</label>
+        <div class="linked-responses-container">
+          ${this.createResponseIds.map((resId, index) => html`
+            <div class="linked-response-row">
+              <select @change="${e => this.updateLinkedResponse(index, parseInt(e.target.value, 10), true)}">
+                <option value="">Select Response Trigger</option>
+                ${this.allResponses.map(resp => html`
+                  <option value="${resp.id}" ?selected="${resp.id === resId}">${resp.text}</option>
+                `)}
+              </select>
+              <button type="button" class="row-delete-btn" @click="${() => this.removeLinkedResponse(index, true)}">×</button>
+            </div>
+          `)}
+          <button type="button" class="link-new-btn" @click="${() => this.addLinkedResponse(true)}">Link New Response</button>
+        </div>
+
+        <div class="buttonContainer">
+          <button @click="${() => this.showCreatePopup = false}" class="cancelButton">Cancel</button>
+          <button @click="${this.createMessage}" class="saveButton">Create</button>
+        </div>
+      </div>
+    `;
+  }
+
+  renderIfTextRows(block, blockIndex, isCreate = false) {
     const ifText = block.ifText || [];
     const insertIndexes = block.insertIndexes || [];
     
@@ -571,8 +686,8 @@ export class MessageCard extends LitElement {
         rows.push(html`
           <div class="ifelse-row">
             <input type="text" .value="${ifText[currentTextIdx]}" 
-              @input="${e => this.updateIfTextString(blockIndex, currentTextIdx, e.target.value)}">
-            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, currentTextIdx, 'text')}">×</button>
+              @input="${e => this.updateIfTextString(blockIndex, currentTextIdx, e.target.value, isCreate)}">
+            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, currentTextIdx, 'text', isCreate)}">×</button>
           </div>
         `);
         textCursor++;
@@ -585,7 +700,7 @@ export class MessageCard extends LitElement {
             <div class="pill">
               <span>{${block.varName || 'variable'}}</span>
             </div>
-            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, targetVarIndex, 'var')}">×</button>
+            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, targetVarIndex, 'var', isCreate)}">×</button>
           </div>
         `);
       }
@@ -593,44 +708,55 @@ export class MessageCard extends LitElement {
     return html`${rows}`;
   }
 
-  addIfTextSentence(blockIndex) {
-    const block = this.formTextList[blockIndex];
+  addIfTextSentence(blockIndex, isCreate = false) {
+    const list = isCreate ? this.createTextList : this.formTextList;
+    const block = list[blockIndex];
     const ifText = [...(block.ifText || []), ''];
-    this.updateBlockField(blockIndex, 'ifText', ifText);
+    this.updateBlockField(blockIndex, 'ifText', ifText, isCreate);
   }
 
-  addIfTextVariable(blockIndex) {
-    const block = this.formTextList[blockIndex];
+  addIfTextVariable(blockIndex, isCreate = false) {
+    const list = isCreate ? this.createTextList : this.formTextList;
+    const block = list[blockIndex];
     const ifText = block.ifText || [];
     const insertIndexes = [...(block.insertIndexes || []), ifText.length];
-    const updated = [...this.formTextList];
+    const updated = [...list];
     updated[blockIndex] = { ...updated[blockIndex], insertIndexes };
-    this.formTextList = updated;
+    if (isCreate) {
+      this.createTextList = updated;
+    } else {
+      this.formTextList = updated;
+    }
   }
 
-  updateIfTextString(blockIndex, textIndex, value) {
-    const block = this.formTextList[blockIndex];
+  updateIfTextString(blockIndex, textIndex, value, isCreate = false) {
+    const list = isCreate ? this.createTextList : this.formTextList;
+    const block = list[blockIndex];
     const ifText = [...(block.ifText || [])];
     ifText[textIndex] = value;
-    this.updateBlockField(blockIndex, 'ifText', ifText);
+    this.updateBlockField(blockIndex, 'ifText', ifText, isCreate);
   }
 
-  removeIfTextItem(blockIndex, itemIndex, type) {
-    const block = this.formTextList[blockIndex];
+  removeIfTextItem(blockIndex, itemIndex, type, isCreate = false) {
+    const list = isCreate ? this.createTextList : this.formTextList;
+    const block = list[blockIndex];
     let ifText = [...(block.ifText || [])];
     let insertIndexes = [...(block.insertIndexes || [])];
 
     if (type === 'text') {
       ifText.splice(itemIndex, 1);
-      // Adjust insertIndexes mapping values appropriately
       insertIndexes = insertIndexes.map(idx => idx > itemIndex ? idx - 1 : idx);
     } else {
       insertIndexes.splice(itemIndex, 1);
     }
 
-    const updated = [...this.formTextList];
+    const updated = [...list];
     updated[blockIndex] = { ...updated[blockIndex], ifText, insertIndexes };
-    this.formTextList = updated;
+    if (isCreate) {
+      this.createTextList = updated;
+    } else {
+      this.formTextList = updated;
+    }
   }
 
   setPreviewState(blockIndex, state) {
@@ -660,18 +786,32 @@ export class MessageCard extends LitElement {
     return result.trim() || '(Empty if-text content)';
   }
 
-  addLinkedResponse() {
-    this.formResponseIds = [...this.formResponseIds, ''];
+  addLinkedResponse(isCreate = false) {
+    if (isCreate) {
+      this.createResponseIds = [...this.createResponseIds, ''];
+    } else {
+      this.formResponseIds = [...this.formResponseIds, ''];
+    }
   }
 
-  updateLinkedResponse(index, value) {
-    const updated = [...this.formResponseIds];
-    updated[index] = value;
-    this.formResponseIds = updated;
+  updateLinkedResponse(index, value, isCreate = false) {
+    if (isCreate) {
+      const updated = [...this.createResponseIds];
+      updated[index] = value;
+      this.createResponseIds = updated;
+    } else {
+      const updated = [...this.formResponseIds];
+      updated[index] = value;
+      this.formResponseIds = updated;
+    }
   }
 
-  removeLinkedResponse(index) {
-    this.formResponseIds = this.formResponseIds.filter((_, i) => i !== index);
+  removeLinkedResponse(index, isCreate = false) {
+    if (isCreate) {
+      this.createResponseIds = this.createResponseIds.filter((_, i) => i !== index);
+    } else {
+      this.formResponseIds = this.formResponseIds.filter((_, i) => i !== index);
+    }
   }
 
   renderDeletePopup() {
@@ -688,21 +828,32 @@ export class MessageCard extends LitElement {
     `;
   }
 
-  addFormBlock() {
-    this.formTextList = [
-      ...this.formTextList,
-      { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' }
-    ];
+  addFormBlock(isCreate = false) {
+    const newBlock = { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' };
+    if (isCreate) {
+      this.createTextList = [...this.createTextList, newBlock];
+    } else {
+      this.formTextList = [...this.formTextList, newBlock];
+    }
   }
 
-  removeFormBlock(index) {
-    this.formTextList = this.formTextList.filter((_, i) => i !== index);
+  removeFormBlock(index, isCreate = false) {
+    if (isCreate) {
+      this.createTextList = this.createTextList.filter((_, i) => i !== index);
+    } else {
+      this.formTextList = this.formTextList.filter((_, i) => i !== index);
+    }
   }
 
-  updateBlockField(index, field, value) {
-    const updated = [...this.formTextList];
+  updateBlockField(index, field, value, isCreate = false) {
+    const list = isCreate ? this.createTextList : this.formTextList;
+    const updated = [...list];
     updated[index] = { ...updated[index], [field]: value };
-    this.formTextList = updated;
+    if (isCreate) {
+      this.createTextList = updated;
+    } else {
+      this.formTextList = updated;
+    }
   }
 
   openEditPopup() {
@@ -716,6 +867,16 @@ export class MessageCard extends LitElement {
     this.fetchAllResponses();
     this.fetchVarTypes();
     this.showEditPopup = true;
+  }
+
+  openCreatePopup() {
+    this.createMilestone = 0;
+    this.createIsBefore = true;
+    this.createTextList = [{ mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' }];
+    this.createResponseIds = [];
+    this.fetchAllResponses();
+    this.fetchVarTypes();
+    this.showCreatePopup = true;
   }
 
   async saveMessage() {
@@ -745,6 +906,32 @@ export class MessageCard extends LitElement {
     }
   }
 
+  async createMessage() {
+    let newMessage = {
+      dayMileStone: this.createMilestone,
+      isBefore: this.createIsBefore,
+      textList: this.createTextList,
+      responseIds: this.createResponseIds.filter(id => id)
+    };
+
+    try {
+      let response = await fetch("/api/messages/create_message", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(newMessage)
+      });
+
+      if (response.ok) {
+        this.showCreatePopup = false;
+        this.dispatchEvent(new CustomEvent('message-created', { bubbles: true, composed: true }));
+      } else {
+        console.error("Failed to create message");
+      }
+    } catch (e) {
+      console.error("Error creating message:", e);
+    }
+  }
+
   async deleteMessage() {
     if (this.messageId == null) return;
     try {
@@ -762,6 +949,7 @@ export class MessageCard extends LitElement {
       <div class="messageContainer">
         ${this.renderDeletePopup()}
         ${this.renderEditPopup()}
+        ${this.renderCreatePopup()}
         <p><strong>Milestone:</strong> ${this.dayMileStone} days ${this.isBefore ? 'before' : 'after'}</p>
         <p><strong>Content:</strong> ${this.getSummaryText()}</p>
         <p><strong>Responses Linked:</strong> ${this.responseIds.length}</p>

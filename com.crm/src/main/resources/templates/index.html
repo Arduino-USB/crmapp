@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <head>
-  <script type="module" src="/static/js/user-card.js"></script>
-  <script type="module" src="/static/js/user-page.js"></script>
-  <script type="module" src="/static/js/appointment-page.js"></script>
-  <script type="module" src="/static/js/appointments-card.js"></script>
-	<script type="module" src="/static/js/message-card.js"></script>
-	<script type="module" src="/static/js/messages-page.js"></script>
-	<script type="module" src="/static/js/response-card.js"></script>
-	<script type="module" src="/static/js/responses-page.js"></script>
+    <script type="module" src="/static/js/user-card.js"></script>
+    <script type="module" src="/static/js/user-page.js"></script>
+    <script type="module" src="/static/js/appointment-page.js"></script>
+    <script type="module" src="/static/js/appointments-card.js"></script>
+    <script type="module" src="/static/js/message-card.js"></script>
+    <script type="module" src="/static/js/messages-page.js"></script>
+    <script type="module" src="/static/js/response-card.js"></script>
+    <script type="module" src="/static/js/responses-page.js"></script>
 </head>
 <body>
     <style>
@@ -60,6 +60,7 @@
             flex-direction: column;
             gap: 8px;
             padding: 24px 16px;
+            flex: 1; /* Pushes the footer down */
         }
 
         .nav-btn {
@@ -88,6 +89,30 @@
             color: var(--primary);
             font-weight: 600;
             box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Sidebar Footer / Connection Indicator */
+        .sidebar-footer {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.875rem;
+            color: var(--text-sidebar);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ef4444; /* Default Red */
+            transition: background-color 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background-color: #22c55e; /* Green */
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
         }
 
         /* Main Content Viewport Styling */
@@ -121,6 +146,11 @@
             <button class="nav-btn" data-target="messages" data-component="messages-page">Messages</button>
             <button class="nav-btn" data-target="responses" data-component="responses-page">Responses</button>
         </div>
+        <!-- Phone Connection Status Footer -->
+        <div class="sidebar-footer">
+            <div id="phone-status-dot" class="status-dot"></div>
+            <span id="phone-status-text">Phone Disconnected</span>
+        </div>
     </nav>
 
     <!-- Main Content Dynamic Views -->
@@ -132,6 +162,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const navButtons = document.querySelectorAll('.nav-btn');
             const viewContainer = document.getElementById('view-container');
+            const phoneStatusDot = document.getElementById('phone-status-dot');
+            const phoneStatusText = document.getElementById('phone-status-text');
 
             function renderActivePage(componentTag) {
                 viewContainer.innerHTML = '';
@@ -153,6 +185,31 @@
                     renderActivePage(targetComponent);
                 });
             });
+
+            // Function to check phone connection status
+            async function checkPhoneConnection() {
+                try {
+                    const response = await fetch('/phone_connected');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    
+                    if (data.status) {
+                        phoneStatusDot.classList.add('connected');
+                        phoneStatusText.textContent = 'Phone Connected';
+                    } else {
+                        phoneStatusDot.classList.remove('connected');
+                        phoneStatusText.textContent = 'Phone Disconnected';
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch phone connection status:', error);
+                    phoneStatusDot.classList.remove('connected');
+                    phoneStatusText.textContent = 'Connection Error';
+                }
+            }
+
+            // Check immediately on load, then poll every 5 seconds
+            checkPhoneConnection();
+            setInterval(checkPhoneConnection, 5000);
         });
     </script>
 </body>

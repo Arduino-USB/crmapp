@@ -7,6 +7,21 @@ export class MessagesPage extends LitElement {
       display: block;
       color: #f8fafc;
       padding: 16px;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger-color: #ef4444;
+      --danger-hover: #dc2626;
+      --secondary-color: #334155;
+      --secondary-hover: #1e293b;
+      --bg-surface: #1e293b;
+      --bg-main: #0f172a;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-light: #ffffff;
+      --border-color: #334155;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
     }
 
     .top-bar {
@@ -36,57 +51,47 @@ export class MessagesPage extends LitElement {
       gap: 16px;
     }
 
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
+    .editMessagePopup {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal {
-      background-color: #1e293b;
+      flex-direction: column;
+      align-items: stretch;
       padding: 24px;
-      border-radius: 8px;
+      position: fixed;
+      background-color: var(--bg-surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
       width: 100%;
-      max-width: 500px;
-      border: 1px solid #334155;
-      color: #f8fafc;
+      max-width: 550px;
       max-height: 85vh;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+      border: 1px solid var(--border-color);
+      z-index: 1000;
+      color: var(--text-main);
       overflow-y: auto;
     }
 
-    .modal h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 0.85rem;
-      color: #94a3b8;
-    }
-
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
+    .editMessagePopup input,
+    .editMessagePopup select,
+    .editMessagePopup textarea {
       width: 100%;
-      padding: 8px;
+      padding: 8px 10px;
       background-color: #0f172a;
-      border: 1px solid #475569;
-      color: #f8fafc;
-      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      font-size: 0.85rem;
       box-sizing: border-box;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .editMessagePopup label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
     .error-text {
@@ -95,88 +100,195 @@ export class MessagesPage extends LitElement {
       margin-top: 4px;
     }
 
-    .modal-actions {
+    .buttonContainer {
       display: flex;
+      flex-direction: row; 
       justify-content: flex-end;
       gap: 8px;
-      margin-top: 20px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
     }
 
-    .modal-actions button {
+    .buttonContainer button {
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
       padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
+      border-radius: var(--radius-sm);
       border: none;
+      cursor: pointer;
     }
 
-    .cancel-btn {
-      background-color: #475569;
-      color: #f8fafc;
+    .cancelButton {
+      background-color: var(--secondary-color);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
     }
 
-    .submit-btn {
-      background-color: #38bdf8;
-      color: #0f172a;
-      font-weight: 600;
+    .cancelButton:hover {
+      background-color: var(--secondary-hover);
+      color: var(--text-light);
     }
 
-    .response-checkboxes {
-      max-height: 120px;
-      overflow-y: auto;
-      background: #0f172a;
-      border: 1px solid #475569;
-      border-radius: 4px;
-      padding: 8px;
-      margin-top: 4px;
+    .saveButton {
+      background-color: #22c55e;
+      color: var(--text-light);
     }
 
-    .response-checkbox-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-      padding: 4px 0;
+    .saveButton:hover {
+      background-color: #16a34a;
     }
 
     .block-container {
       background: #0f172a;
-      border: 1px solid #475569;
-      border-radius: 4px;
-      padding: 10px;
-      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 12px;
     }
 
     .block-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .remove-block-btn {
-      background: #ef4444;
+      background: var(--danger-color);
       color: #fff;
       border: none;
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 4px;
       font-size: 0.75rem;
       cursor: pointer;
     }
 
     .add-block-btn {
-      background: #334155;
+      background: var(--secondary-color);
       color: #fff;
-      border: 1px solid #475569;
-      padding: 6px 10px;
-      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
       font-size: 0.8rem;
       cursor: pointer;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       width: 100%;
     }
 
     .add-block-btn:hover {
+      background: var(--secondary-hover);
+    }
+
+    .ifelse-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .ifelse-row input[type="text"] {
+      margin: 0;
+      flex: 1;
+    }
+
+    .pill {
+      background-color: var(--primary-color);
+      color: var(--text-light);
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .row-delete-btn {
+      background: var(--danger-color);
+      color: #fff;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ifelse-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ifelse-actions button {
+      background: var(--secondary-color);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .ifelse-actions button:hover {
+      background: var(--secondary-hover);
+      color: var(--text-light);
+    }
+
+    .preview-box {
       background: #1e293b;
+      border: 1px dashed var(--border-color);
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .preview-box span {
+      color: var(--text-main);
+    }
+
+    .linked-responses-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .linked-response-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .linked-response-row select {
+      margin: 0;
+      flex: 1;
+    }
+
+    .link-new-btn {
+      background: var(--secondary-color);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .link-new-btn:hover {
+      background: var(--secondary-hover);
+      color: var(--text-light);
     }
   `;
 
@@ -189,7 +301,8 @@ export class MessagesPage extends LitElement {
     formIsBefore: {state: true},
     formTextList: {state: true},
     formResponseIds: {state: true},
-    formError: {state: true}
+    formError: {state: true},
+    previewStates: {state: true}
   };
 
   constructor() {
@@ -203,6 +316,7 @@ export class MessagesPage extends LitElement {
     this.formTextList = [];
     this.formResponseIds = [];
     this.formError = '';
+    this.previewStates = {};
   }
 
   async connectedCallback() {
@@ -229,17 +343,18 @@ export class MessagesPage extends LitElement {
     this.formMilestone = 0;
     this.formIsBefore = true;
     this.formTextList = [
-      { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [], insertIndexes: [], elseText: '' }
+      { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' }
     ];
     this.formResponseIds = [];
     this.formError = '';
+    this.previewStates = {};
     this.isModalOpen = true;
   }
 
   addFormBlock() {
     this.formTextList = [
       ...this.formTextList,
-      { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [], insertIndexes: [], elseText: '' }
+      { mode: 'TEXT', plainText: '', varType: '', varName: '', ifText: [''], insertIndexes: [], elseText: '' }
     ];
   }
 
@@ -253,25 +368,148 @@ export class MessagesPage extends LitElement {
     this.formTextList = updated;
   }
 
-  handleCheckbox(id, checked) {
-    if (checked) {
-      if (!this.formResponseIds.includes(id)) {
-        this.formResponseIds = [...this.formResponseIds, id];
+  renderIfTextRows(block, blockIndex) {
+    const ifText = block.ifText || [];
+    const insertIndexes = block.insertIndexes || [];
+    
+    let rows = [];
+    let textCursor = 0;
+    
+    for (let i = 0; i <= ifText.length; i++) {
+      if (textCursor < ifText.length) {
+        const currentTextIdx = textCursor;
+        rows.push(html`
+          <div class="ifelse-row">
+            <input type="text" .value="${ifText[currentTextIdx]}" 
+              @input="${e => this.updateIfTextString(blockIndex, currentTextIdx, e.target.value)}">
+            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, currentTextIdx, 'text')}">×</button>
+          </div>
+        `);
+        textCursor++;
       }
-    } else {
-      this.formResponseIds = this.formResponseIds.filter(rId => rId !== id);
+      
+      if (insertIndexes.includes(textCursor)) {
+        const targetVarIndex = insertIndexes.indexOf(textCursor);
+        rows.push(html`
+          <div class="ifelse-row">
+            <div class="pill">
+              <span>{${block.varName || 'variable'}}</span>
+            </div>
+            <button type="button" class="row-delete-btn" @click="${() => this.removeIfTextItem(blockIndex, targetVarIndex, 'var')}">×</button>
+          </div>
+        `);
+      }
     }
+    return html`${rows}`;
+  }
+
+  addIfTextSentence(blockIndex) {
+    const block = this.formTextList[blockIndex];
+    const ifText = [...(block.ifText || []), ''];
+    this.updateBlockField(blockIndex, 'ifText', ifText);
+  }
+
+  addIfTextVariable(blockIndex) {
+    const block = this.formTextList[blockIndex];
+    const ifText = block.ifText || [];
+    const insertIndexes = [...(block.insertIndexes || []), ifText.length];
+    const updated = [...this.formTextList];
+    updated[blockIndex] = { ...updated[blockIndex], insertIndexes };
+    this.formTextList = updated;
+  }
+
+  updateIfTextString(blockIndex, textIndex, value) {
+    const block = this.formTextList[blockIndex];
+    const ifText = [...(block.ifText || [])];
+    ifText[textIndex] = value;
+    this.updateBlockField(blockIndex, 'ifText', ifText);
+  }
+
+  removeIfTextItem(blockIndex, itemIndex, type) {
+    const block = this.formTextList[blockIndex];
+    let ifText = [...(block.ifText || [])];
+    let insertIndexes = [...(block.insertIndexes || [])];
+
+    if (type === 'text') {
+      ifText.splice(itemIndex, 1);
+      insertIndexes = insertIndexes.map(idx => idx > itemIndex ? idx - 1 : idx);
+    } else {
+      insertIndexes.splice(itemIndex, 1);
+    }
+
+    const updated = [...this.formTextList];
+    updated[blockIndex] = { ...updated[blockIndex], ifText, insertIndexes };
+    this.formTextList = updated;
+  }
+
+  setPreviewState(blockIndex, state) {
+    this.previewStates = { ...this.previewStates, [blockIndex]: state };
+  }
+
+  getBlockPreview(block, blockIndex) {
+    const state = this.previewStates[blockIndex] || 'exists';
+    if (state === 'missing') {
+      return block.elseText || '(No fallback text provided)';
+    }
+
+    const ifText = block.ifText || [];
+    const insertIndexes = block.insertIndexes || [];
+    let result = '';
+    let textCursor = 0;
+
+    for (let i = 0; i <= ifText.length; i++) {
+      if (textCursor < ifText.length) {
+        result += (ifText[textCursor] || '') + ' ';
+        textCursor++;
+      }
+      if (insertIndexes.includes(textCursor)) {
+        result += `[${block.varName || 'variable'}] `;
+      }
+    }
+    return result.trim() || '(Empty if-text content)';
+  }
+
+  addLinkedResponse() {
+    this.formResponseIds = [...this.formResponseIds, ''];
+  }
+
+  updateLinkedResponse(index, value) {
+    const updated = [...this.formResponseIds];
+    updated[index] = value;
+    this.formResponseIds = updated;
+  }
+
+  removeLinkedResponse(index) {
+    this.formResponseIds = this.formResponseIds.filter((_, i) => i !== index);
   }
 
   async submitNewMessage(e) {
     e.preventDefault();
     this.formError = '';
 
+    let formattedTextList = this.formTextList.map(block => {
+      if (block.mode === 'TEXT') {
+        return {
+          mode: 'TEXT',
+          plainText: block.plainText || ''
+        };
+      } else {
+        return {
+          mode: block.mode,
+          varType: block.varType,
+          varName: block.varName,
+          ifText: block.ifText,
+          insertIndexes: block.insertIndexes,
+          elseText: block.elseText
+        };
+      }
+    });
+
     let payload = {
       dayMileStone: parseInt(this.formMilestone, 10) || 0,
       isBefore: this.formIsBefore,
-      textList: this.formTextList,
-      responseIds: this.formResponseIds
+      textList: formattedTextList,
+      responseIds: this.formResponseIds.filter(id => id)
     };
 
     try {
@@ -310,66 +548,69 @@ export class MessagesPage extends LitElement {
       </div>
 
       ${this.isModalOpen ? html`
-        <div class="modal-overlay">
-          <div class="modal">
-            <h3>Create New Message</h3>
+        <div class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+          <div class="editMessagePopup">
+            <p style="font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Create New Message</p>
             <form @submit="${this.submitNewMessage}">
-              <div class="form-group">
-                <label>Milestone (Days):</label>
-                <input type="number" .value="${this.formMilestone}" @input="${e => this.formMilestone = e.target.value}" required />
-              </div>
+              <label>Milestone (Days):</label>
+              <input type="number" .value="${this.formMilestone}" @input="${e => this.formMilestone = parseInt(e.target.value, 10) || 0}" required />
 
-              <div class="form-group">
-                <label>Timing:</label>
-                <select .value="${String(this.formIsBefore)}" @change="${e => this.formIsBefore = e.target.value === 'true'}">
-                  <option value="true">Before Appointment</option>
-                  <option value="false">After Appointment</option>
-                </select>
-              </div>
+              <label>Timing:</label>
+              <select .value="${String(this.formIsBefore)}" @change="${e => this.formIsBefore = e.target.value === 'true'}">
+                <option value="true">Before Appointment</option>
+                <option value="false">After Appointment</option>
+              </select>
 
-              <label style="margin-top: 8px; display: block; font-weight: 600; color: #94a3b8; font-size: 0.85rem;">Text Blocks:</label>
+              <label style="margin-top: 8px; display: block; font-weight: 600;">Text Blocks:</label>
               ${this.formTextList.map((block, index) => html`
                 <div class="block-container">
                   <div class="block-header">
-                    <label style="font-size: 0.8rem; color: #94a3b8;">Block #${index + 1}</label>
+                    <label>Block #${index + 1} (${block.mode})</label>
                     <button type="button" class="remove-block-btn" @click="${() => this.removeFormBlock(index)}">Remove</button>
                   </div>
                   
-                  <div class="form-group" style="margin-bottom: 8px;">
-                    <label>Mode:</label>
-                    <select .value="${block.mode}" @change="${e => this.updateBlockField(index, 'mode', e.target.value)}">
-                      <option value="TEXT">TEXT</option>
-                      <option value="IFELSE">IFELSE</option>
-                    </select>
-                  </div>
+                  <label>Mode:</label>
+                  <select .value="${block.mode}" @change="${e => this.updateBlockField(index, 'mode', e.target.value)}">
+                    <option value="TEXT">TEXT</option>
+                    <option value="IFELSE">IFELSE</option>
+                  </select>
 
                   ${block.mode === 'TEXT' ? html`
-                    <div class="form-group" style="margin-bottom: 8px;">
-                      <label>Plain Text:</label>
-                      <textarea rows="2" .value="${block.plainText || ''}" @input="${e => this.updateBlockField(index, 'plainText', e.target.value)}" required></textarea>
-                    </div>
+                    <label>Plain Text:</label>
+                    <textarea rows="2" .value="${block.plainText || ''}" @input="${e => this.updateBlockField(index, 'plainText', e.target.value)}" required></textarea>
                   ` : html`
-                    <div class="form-group" style="margin-bottom: 8px;">
-                      <label>Var Type:</label>
-                      <select .value="${block.varType || ''}" @change="${e => this.updateBlockField(index, 'varType', e.target.value)}">
-                        <option value="">Select VarType</option>
-                        ${this.varTypes.map(vt => html`<option value="${vt}">${vt}</option>`)}
-                      </select>
+                    <label>Var Type:</label>
+                    <select .value="${block.varType || ''}" @change="${e => this.updateBlockField(index, 'varType', e.target.value)}">
+                      <option value="">Select VarType</option>
+                      ${this.varTypes.map(vt => html`<option value="${vt}">${vt}</option>`)}
+                    </select>
+
+                    <label>Var Name:</label>
+                    <input type="text" .value="${block.varName || ''}" @input="${e => this.updateBlockField(index, 'varName', e.target.value)}" required />
+
+                    <label>If Text Layout:</label>
+                    <div style="margin-top: 4px;">
+                      ${this.renderIfTextRows(block, index)}
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 8px;">
-                      <label>Var Name:</label>
-                      <input type="text" .value="${block.varName || ''}" @input="${e => this.updateBlockField(index, 'varName', e.target.value)}" required />
+                    <div class="ifelse-actions">
+                      <button type="button" @click="${() => this.addIfTextSentence(index)}">+ Add Text</button>
+                      <button type="button" @click="${() => this.addIfTextVariable(index)}">+ Insert Variable</button>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 8px;">
-                      <label>If Text (comma separated options):</label>
-                      <input type="text" .value="${(block.ifText || []).join(', ')}" @input="${e => this.updateBlockField(index, 'ifText', e.target.value.split(',').map(s => s.trim()))}" />
-                    </div>
+                    <label>Else Text (Fallback):</label>
+                    <input type="text" .value="${block.elseText || ''}" @input="${e => this.updateBlockField(index, 'elseText', e.target.value)}" />
 
-                    <div class="form-group" style="margin-bottom: 8px;">
-                      <label>Else Text (Fallback):</label>
-                      <input type="text" .value="${block.elseText || ''}" @input="${e => this.updateBlockField(index, 'elseText', e.target.value)}" />
+                    <div class="preview-box">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <strong>Preview:</strong>
+                        <select style="width: auto; margin: 0; padding: 2px 6px; font-size: 0.75rem;" 
+                          @change="${e => this.setPreviewState(index, e.target.value)}">
+                          <option value="exists">Variable Exists</option>
+                          <option value="missing">Variable Missing (Else)</option>
+                        </select>
+                      </div>
+                      <span>${this.getBlockPreview(block, index)}</span>
                     </div>
                   `}
                 </div>
@@ -377,27 +618,27 @@ export class MessagesPage extends LitElement {
 
               <button type="button" class="add-block-btn" @click="${this.addFormBlock}">+ Add Text Block</button>
 
-              <div class="form-group">
-                <label>Associated Responses:</label>
-                <div class="response-checkboxes">
-                  ${this.allResponses.map(resp => html`
-                    <div class="response-checkbox-item">
-                      <input 
-                        type="checkbox" 
-                        .checked="${this.formResponseIds.includes(resp.id)}"
-                        @change="${e => this.handleCheckbox(resp.id, e.target.checked)}"
-                      >
-                      <span>[${resp.mode}] "${resp.text}"</span>
-                    </div>
-                  `)}
-                </div>
+              <label>Associated Responses:</label>
+              <div class="linked-responses-container">
+                ${this.formResponseIds.map((resId, index) => html`
+                  <div class="linked-response-row">
+                    <select @change="${e => this.updateLinkedResponse(index, parseInt(e.target.value, 10))}">
+                      <option value="">Select Response Trigger</option>
+                      ${this.allResponses.map(resp => html`
+                        <option value="${resp.id}" ?selected="${resp.id === resId}">${resp.text}</option>
+                      `)}
+                    </select>
+                    <button type="button" class="row-delete-btn" @click="${() => this.removeLinkedResponse(index)}">×</button>
+                  </div>
+                `)}
+                <button type="button" class="link-new-btn" @click="${this.addLinkedResponse}">Link New Response</button>
               </div>
 
               ${this.formError ? html`<div class="error-text">${this.formError}</div>` : ''}
 
-              <div class="modal-actions">
-                <button type="button" class="cancel-btn" @click="${() => this.isModalOpen = false}">Cancel</button>
-                <button type="submit" class="submit-btn">Save</button>
+              <div class="buttonContainer">
+                <button type="button" class="cancelButton" @click="${() => this.isModalOpen = false}">Cancel</button>
+                <button type="submit" class="saveButton">Save</button>
               </div>
             </form>
           </div>

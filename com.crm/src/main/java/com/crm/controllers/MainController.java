@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.crm.TemplateRenderer;
+import com.crm.ConnectionLoop;
 
 import java.util.Map;
 import java.util.List;
@@ -26,6 +27,11 @@ public class MainController {
     @GetMapping("/alive")
 	public Map<String, String> alive_check() {
 		return Map.of("status", "ok");
+	}
+
+	@GetMapping("/phone_connected")
+	public Map<String, Boolean> phone_connected() {
+		return Map.of("status", ConnectionLoop.connected());	
 	}
 
 }

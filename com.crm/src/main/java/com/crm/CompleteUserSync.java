@@ -75,7 +75,7 @@ public class CompleteUserSync {
 					            new TypeReference<Map<String, String>>() {}
 					    );
 
-					    currentUser.setPhone(formatPhoneNumber(patientData.get("Mobile Phone")));
+					    currentUser.setPhone(formatPhoneNumber(patientData.get("phone")));
 					    userRepo.save(currentUser);
 					    System.out.println("[CompleteUserSync] User phone number saved for ID: " + currentUser.getId());
 
