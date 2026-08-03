@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.Optional;
 import java.time.*;
 
@@ -33,6 +37,13 @@ public interface AppointmentRepo extends JpaRepository<Appointment, Long> {
 	""")
 	List<Appointment> findAppointmentPhoneNotBlank();
 
+
+	@Query("""
+        SELECT a FROM Appointment a 
+        JOIN User u ON u.id = a.userId 
+        WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :partName, '%'))
+    """)
+    Page<Appointment> searchByUserNameContainingIgnoreCase(String partName, Pageable pageable);
 
     default List<Appointment> findByDay(LocalDate day) {
         ZoneId zone = ZoneId.systemDefault();

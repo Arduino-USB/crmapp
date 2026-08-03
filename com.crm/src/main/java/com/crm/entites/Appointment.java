@@ -190,4 +190,14 @@ public class Appointment {
 		return null;
 		//this.varibles.get(varName);	
 	}
+	
+	public void setVarList(List<Varible> varibles) {
+		
+		this.varibles = varibles;
+	}
+
+	public List<Varible> getVarList() {
+		
+		return this.varibles;
+	}
 }

@@ -26,15 +26,17 @@ public class User {
 	
 	@ElementCollection(fetch = FetchType.EAGER)
 	private List<Varible> varibles = new ArrayList<>();
+
     // Constructors
     public User() {
     }
 
-    public User(Long id, String name, String phone, String prefName) {
+    public User(Long id, String name, String phone, String prefName, List<Varible> varibles) {
         this.id = id;
         this.name = name;
         this.phone = phone;
         this.prefName = prefName != null ? prefName : "";
+		this.varibles = varibles;
     }
 
     // Getters and Setters
@@ -83,6 +85,17 @@ public class User {
 		//this.varibles.put(varName, varContent);
 	}
 	
+	public void setVarList(List<Varible> varibles) {
+		
+		this.varibles = varibles;
+	}
+
+	public List<Varible> getVarList() {
+		
+		return this.varibles;
+	}
+
+
 	public String getVar(String varName) {
 		for (int i = 0; i < varibles.size(); i++) {
 			Varible currentVar = varibles.get(i);

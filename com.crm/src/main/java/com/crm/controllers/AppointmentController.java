@@ -1,14 +1,22 @@
 package com.crm.controllers;
 
+import com.crm.EntityMerge;
 import com.crm.entites.Appointment;
 import com.crm.repos.AppointmentRepo;
-import jakarta.validation.Valid;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -21,49 +29,52 @@ public class AppointmentController {
         this.appointmentRepo = appointmentRepo;
     }
 
-    @GetMapping
-    public ResponseEntity<?> getAppointments(
-            @RequestParam(required = false) Long id,
-            @PageableDefault(size = 20) Pageable pageable) {
+    @GetMapping("/get_appointment_by_id")
+    public Appointment getAppointmentById(@RequestParam Long id) {
+        Optional<Appointment> appointment = appointmentRepo.findById(id);
 
-        if (id != null) {
-            return appointmentRepo.findById(id)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+        if (appointment.isPresent()) {
+            return appointment.get();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment does not exist");
+        }
+    }
+	
+	@GetMapping("/search")
+    public Page<Appointment> searchAppointmentsByPartName(@RequestParam String partName) {
+        // Pageable.unpaged() fetches all matching records and packs them into a single Page response
+        return appointmentRepo.searchByUserNameContainingIgnoreCase(partName, Pageable.unpaged());
+    }
+
+    @PostMapping("/create_appointment")
+    public Appointment createAppointment(@Valid @RequestBody Appointment appointment) {
+        return appointmentRepo.save(appointment);
+    }
+
+    @GetMapping("/get_all_appointments")
+    public Page<Appointment> getAllAppointments(@RequestParam int page, @RequestParam(defaultValue = "9") int pageSize) {
+        return appointmentRepo.findAll(PageRequest.of(page, pageSize));
+    }
+
+    @PutMapping("/update_appointment")
+    public Appointment updateAppointment(@RequestBody Appointment updatedDetails) {
+        Optional<Appointment> originalAppointment = appointmentRepo.findById(updatedDetails.getId());
+
+        if (!originalAppointment.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment does not exist");
         }
 
-        Page<Appointment> page = appointmentRepo.findAll(pageable);
-        return ResponseEntity.ok(page);
+        Appointment merged = EntityMerge.merge(originalAppointment.get(), updatedDetails);
+        return appointmentRepo.save(merged);
     }
 
-    @PostMapping
-    public ResponseEntity<Appointment> createAppointment(@Valid @RequestBody Appointment appointment) {
-        Appointment savedAppointment = appointmentRepo.save(appointment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedAppointment);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Appointment> updateAppointment(@PathVariable Long id, @RequestBody Appointment updatedDetails) {
-        return appointmentRepo.findById(id)
-                .map(existingAppointment -> {
-                    if (updatedDetails.getTime() != null) {
-                        existingAppointment.setTime(updatedDetails.getTime());
-                    }
-                    if (updatedDetails.getReason() != null) {
-                        existingAppointment.setReason(updatedDetails.getReason());
-                    }
-                    Appointment saved = appointmentRepo.save(existingAppointment);
-                    return ResponseEntity.ok(saved);
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/{id}")
-    public ResponseEntity<Void> deleteAppointment(@PathVariable Long id) {
+    @DeleteMapping("/delete_appointment")
+    public ResponseEntity<String> deleteAppointment(@RequestParam Long id) {
         if (!appointmentRepo.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Appointment does not exist");
         }
+
         appointmentRepo.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Appointment deleted successfully");
     }
 }

@@ -1,17 +1,24 @@
 package com.crm.controllers;
 
+import com.crm.EntityMerge;
 import com.crm.entites.Message;
 import com.crm.entites.Response;
+import com.crm.enums.MatchMode;
+import com.crm.enums.ResponseAction;
 import com.crm.repos.MessageRepo;
 import com.crm.repos.ResponseRepo;
-
-import com.crm.enums.ResponseAction;
-import com.crm.enums.MatchMode;
+import com.crm.embeds.TextBlock.VarType;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -21,102 +28,123 @@ public class MessageController {
     private final MessageRepo messageRepo;
     private final ResponseRepo responseRepo;
 
-    public MessageController(MessageRepo messageRepo, ResponseRepo responseRepo) {
+    public MessageController(
+            MessageRepo messageRepo,
+            ResponseRepo responseRepo) {
         this.messageRepo = messageRepo;
         this.responseRepo = responseRepo;
     }
 
-    // ==========================================
-    // MESSAGE ENDPOINTS
-    // ==========================================
+    // ============================
+    // MESSAGES
+    // ============================
 
-    @GetMapping
-    public ResponseEntity<?> getMessages(@RequestParam(required = false) Long id) {
-        if (id != null) {
-            return messageRepo.findById(id)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/get_message_by_id")
+    public Message getMessageById(@RequestParam Long id) {
+        Optional<Message> message = messageRepo.findById(id);
+
+        if (message.isPresent()) {
+            return message.get();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Message does not exist");
         }
-        return ResponseEntity.ok(messageRepo.findAll());
     }
 
-    @PostMapping
-    public ResponseEntity<Message> createMessage(@Valid @RequestBody Message message) {
-        Message savedMessage = messageRepo.save(message);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedMessage);
+    @GetMapping("/get_all_messages")
+    public List<Message> getAllMessages() {
+        return messageRepo.findAll();
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Message> updateMessage(@PathVariable Long id, @Valid @RequestBody Message updatedMessage) {
-        return messageRepo.findById(id)
-                .map(existingMessage -> {
-                    existingMessage.setTextList(updatedMessage.getTextList());
-                    existingMessage.setDayMileStone(updatedMessage.getDayMileStone());
-                    existingMessage.setBefore(updatedMessage.isBefore());
-					existingMessage.setResponseIds(updatedMessage.getResponseIds());
-                    Message saved = messageRepo.save(existingMessage);
-                    return ResponseEntity.ok(saved);
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @PostMapping("/create_message")
+    public Message createMessage(@Valid @RequestBody Message message) {
+        return messageRepo.save(message);
     }
 
-    @PostMapping("/delete/{id}")
-    public ResponseEntity<Void> deleteMessage(@PathVariable Long id) {
+    @PutMapping("/update_message")
+    public Message updateMessage(@Valid @RequestBody Message updatedMessage) {
+        Optional<Message> originalMessage = messageRepo.findById(updatedMessage.getId());
+
+        if (!originalMessage.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Message does not exist");
+        }
+
+        Message merged = EntityMerge.merge(originalMessage.get(), updatedMessage);
+        return messageRepo.save(merged);
+    }
+
+    @DeleteMapping("/delete_message")
+    public ResponseEntity<String> deleteMessage(@RequestParam Long id) {
         if (!messageRepo.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Message does not exist");
         }
+
         messageRepo.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Message deleted successfully");
     }
 
-    // ==========================================
-    // RESPONSE ENDPOINTS
-    // ==========================================
+    // ============================
+    // RESPONSES
+    // ============================
 
-    @GetMapping("/responses")
-    public ResponseEntity<?> getResponses(@RequestParam(required = false) Long id) {
-        if (id != null) {
-            return responseRepo.findById(id)
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/responses/get_response_by_id")
+    public Response getResponseById(@RequestParam Long id) {
+        Optional<Response> response = responseRepo.findById(id);
+
+        if (response.isPresent()) {
+            return response.get();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response does not exist");
         }
-        return ResponseEntity.ok(responseRepo.findAll());
     }
 
-    @PostMapping("/responses")
-    public ResponseEntity<Response> createResponse(@Valid @RequestBody Response response) {
-        Response savedResponse = responseRepo.save(response);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedResponse);
+    @GetMapping("/responses/get_all_responses")
+    public List<Response> getAllResponses() {
+        return responseRepo.findAll();
     }
 
-    @PutMapping("/responses/{id}")
-    public ResponseEntity<Response> updateResponse(@PathVariable Long id, @Valid @RequestBody Response updatedResponse) {
-        return responseRepo.findById(id)
-                .map(existingResponse -> {
-                    existingResponse.setAction(updatedResponse.getAction());
-                    existingResponse.setMode(updatedResponse.getMode());
-                    Response saved = responseRepo.save(existingResponse);
-                    return ResponseEntity.ok(saved);
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @PostMapping("/responses/create_response")
+    public Response createResponse(@Valid @RequestBody Response response) {
+        return responseRepo.save(response);
     }
 
-    @PostMapping("/responses/delete/{id}")
-    public ResponseEntity<Void> deleteResponse(@PathVariable Long id) {
+    @PutMapping("/responses/update_response")
+    public Response updateResponse(@Valid @RequestBody Response updatedResponse) {
+        Optional<Response> originalResponse = responseRepo.findById(updatedResponse.getId());
+
+        if (!originalResponse.isPresent()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response does not exist");
+        }
+
+        Response merged = EntityMerge.merge(originalResponse.get(), updatedResponse);
+        return responseRepo.save(merged);
+    }
+
+    @DeleteMapping("/responses/delete_response")
+    public ResponseEntity<String> deleteResponse(@RequestParam Long id) {
         if (!responseRepo.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response does not exist");
         }
+
         responseRepo.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("Response deleted successfully");
     }
-		
-	@GetMapping("/responses/get_actions")
-	public ResponseAction[] getResponseActions() {
-		return ResponseAction.values();
-	}
-		
-	@GetMapping("/responses/match_modes")
-	public MatchMode[] getMatchModes() {
-		return MatchMode.values();
-	}
+
+    // ============================
+    // ENUMS / UTILS
+    // ============================
+
+    @GetMapping("/responses/get_actions")
+    public ResponseAction[] getResponseActions() {
+        return ResponseAction.values();
+    }
+        
+    @GetMapping("/get_vartypes")
+    public VarType[] getVarTypes() {
+        return VarType.values();
+    }
+
+    @GetMapping("/responses/match_modes")
+    public MatchMode[] getMatchModes() {
+        return MatchMode.values();
+    }
 }

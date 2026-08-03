@@ -70,58 +70,58 @@ public class AutomatedTextMgr {
 
 
 	private String parseText(User user, Appointment appointment, List<TextBlock> textObjs) {
-		
 		String finalText = "";
-		String varContents = null;
-			
+		
 		for (int i = 0; i < textObjs.size(); i++) {
-			TextBlock textBlock = textObjs.get(0);
-			if (textBlock.mode == TextBlock.Mode.TEXT) {
-				
-				System.out.println("[AutomatedTextMgr].Parser Appending " + textBlock.plainText + " to final text");
-				finalText  = finalText + textBlock.plainText;
-			} else if (textBlock.mode == TextBlock.Mode.IFELSE) {
-				
-				if (textBlock.varType == TextBlock.VarType.USER_VAR) {
-					varContents = user.getVar(textBlock.varName);
-	
-				} else if (textBlock.varType == TextBlock.VarType.APPOINTMENT_VAR) {
-					varContents = appointment.getVar(textBlock.varName);	
-				}
-	
-				if (varContents != null) {
-					System.out.println("[AutomatedTextMgr].Parser Varible '" + textBlock.varName  + "' is defined in '" + textBlock.varType + "'. Appending");
-					List<Integer> insertedIndexes = new ArrayList<>();		
-				
-					for (int j = 0; j < textBlock.ifText.size(); j++) {
-						//here we are checking if we need to inject the varContent varible into current index.
-						boolean insertVar = false;
-						for (int k = 0; k < textBlock.insertIndexes.length; k++) {
-							if (j == textBlock.insertIndexes[k] && !(insertedIndexes.contains(j))) {
-								insertVar = true;
-							}
-						}
-					
-						if (insertVar) {
-							System.out.println("[AutomatedTextMgr].Parser Injecting varContent into finalText");	
-							finalText = finalText + varContents;
-							// becuase we didnt actually insert that yet, and we still need to 
-							insertedIndexes.add(j);
-							j--;
-							continue;
-						} else {
-							finalText = finalText + textBlock.ifText.get(j);
-						}		
-					}		
-			
-				}							
-	
-					
-			}
+		    TextBlock textBlock = textObjs.get(i);
+		    
+		    if (textBlock.mode == TextBlock.Mode.TEXT) {
+		        System.out.println("[AutomatedTextMgr].Parser Appending plainText: " + textBlock.plainText);
+		        if (textBlock.plainText != null) {
+		            finalText += textBlock.plainText;
+		        }
+		    } else if (textBlock.mode == TextBlock.Mode.IFELSE) {
+		        String varContents = null;
+		        
+		        if (textBlock.varType == TextBlock.VarType.USER_VAR) {
+		            varContents = user.getVar(textBlock.varName);
+		        } else if (textBlock.varType == TextBlock.VarType.APPOINTMENT_VAR) {
+		            varContents = appointment.getVar(textBlock.varName);    
+		        }
+		        
+		        if (varContents != null && !varContents.isEmpty()) {
+		            System.out.println("[AutomatedTextMgr].Parser Variable '" + textBlock.varName + "' found. Appending ifText.");
+		            List<Integer> insertedIndexes = new ArrayList<>();        
+		        
+		            for (int j = 0; j < textBlock.ifText.size(); j++) {
+		                boolean insertVar = false;
+		                for (int k = 0; k < textBlock.insertIndexes.length; k++) {
+		                    if (j == textBlock.insertIndexes[k] && !insertedIndexes.contains(j)) {
+		                        insertVar = true;
+		                    }
+		                }
+		            
+		                if (insertVar) {
+		                    System.out.println("[AutomatedTextMgr].Parser Injecting varContents into finalText");    
+		                    finalText += varContents;
+		                    insertedIndexes.add(j);
+		                    j--;
+		                } else {
+		                    finalText += textBlock.ifText.get(j);
+		                }        
+		            }            
+		        } else {
+		            System.out.println("[AutomatedTextMgr].Parser Variable '" + textBlock.varName + "' was null/empty. Appending elseText.");
+		            if (textBlock.elseText != null) {
+		                finalText += textBlock.elseText;
+		            }
+		        }
+		    }
 		}
 		
+		System.out.println("[AutomatedTextMgr].Parser Final text message: " + finalText);
 		return finalText;
-	}	
+	}
 
 
     private void runWorkerLoop() {
@@ -286,9 +286,12 @@ public class AutomatedTextMgr {
         System.out.println("[AutomatedTextMgr] [REPLY RECEIVED] Appt ID " + appointment.getId() 
                 + " latest reply text: \"" + latestReply.getText() + "\"");
 
-        boolean alreadyLogged = smsLogRepo.findByAppointmentIdOrderByTimestampAsc(appointment.getId())
+		boolean alreadyLogged = smsLogRepo.findByAppointmentIdOrderByTimestampAsc(appointment.getId())
             .stream()
-            .anyMatch(log -> "INBOUND".equals(log.getDirection()) && latestReply.getText().equals(log.getMessageContent()));
+            .anyMatch(log -> "INBOUND".equals(log.getDirection()) 
+                && log.getExternalTextId() != null 
+                && log.getExternalTextId().equals(currentTextId)
+                && latestReply.getText().trim().equalsIgnoreCase(log.getMessageContent().trim()));
 
         if (!alreadyLogged) {
             System.out.println("[AutomatedTextMgr] Logging new INBOUND message to SmsLog Repo...");
@@ -300,7 +303,10 @@ public class AutomatedTextMgr {
                 latestReply.getText(),
                 currentTextId
             ));
+        } else {
+            System.out.println("[AutomatedTextMgr] INBOUND message already logged for text ID " + currentTextId);
         }
+
 
         List<Long> responseIds = currentMessage.getResponseIds();
         System.out.println("[AutomatedTextMgr] Checking reply against " + (responseIds != null ? responseIds.size() : 0) + " response rule(s)...");
@@ -338,8 +344,19 @@ public class AutomatedTextMgr {
                     actionMgr.doAction(newAction, appointment);
                     lastExecutedActions.put(appointment.getId(), newAction);
 
-                    String changeText = "Response changed for " + previousAction + " to " + newAction;
+                    String changeText = "Response changed to: \"" + response.getText() + "\"";
                     Long newTextId = textMgr.sendText(user.getPhone(), changeText);
+			
+					smsLogRepo.save(new SmsLog(
+                        appointment.getId(),
+                        user.getId(),
+                        user.getPhone(),
+                        "OUTBOUND",
+                        changeText,
+                        newTextId
+                    ));
+
+
 
                     appointment.setCurrentTextId(newTextId);
                     appointmentRepo.save(appointment);
@@ -353,6 +370,16 @@ public class AutomatedTextMgr {
             System.out.println("[AutomatedTextMgr] [ACTION EXECUTING] Matched Response: " + response.getText() + " | Action: " + newAction);
 
             Long newTextId = textMgr.sendText(user.getPhone(), response.getResponse());
+
+			smsLogRepo.save(new SmsLog(
+			    appointment.getId(),
+			    user.getId(),
+			    user.getPhone(),
+			    "OUTBOUND",
+			    response.getResponse(),
+			    newTextId
+			));
+
 
             appointment.setCurrentTextId(newTextId);
             appointment.setWaitingForResponse(false);

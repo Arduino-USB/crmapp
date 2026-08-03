@@ -5,10 +5,12 @@
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/CompleteUserSync.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/ConnectionLoop.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/DentrixAction.java
+/home/x86debug/crmapp/com.crm/src/main/java/com/crm/EntityMerge.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/HTTPWrapper.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/NetworkMgr.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/PortScanner.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/ResponseMatcher.java
+/home/x86debug/crmapp/com.crm/src/main/java/com/crm/StaticConfig.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/TemplateRenderer.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/TextMgr.java
 /home/x86debug/crmapp/com.crm/src/main/java/com/crm/controllers/AppointmentController.java

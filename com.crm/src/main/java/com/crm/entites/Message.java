@@ -19,8 +19,8 @@ public class Message {
     private Long id;
 
     private int dayMileStone;
-	
-	@ElementCollection(fetch = FetchType.EAGER)
+
+	@ElementCollection(fetch = FetchType.EAGER)	
 	private List<TextBlock> textObjs = new ArrayList<>();
 
 	@JsonProperty("isBefore")
