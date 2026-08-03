@@ -1,0 +1,5 @@
+C:\Schedules>getSchedule.exe "07/28/2026"                                                         
+[{"Amount":"$129.00","Chart #":"009339","Mobile Phone":"(513)693-0916","Name":"Almon-Agee, Brittany A","Pref Name":"","Reason":"LimitedEx","Time":"9:00 AM"},{"Amount":"$129.00","Chart #":"009146","Mobile Phone":"","Name":"Brown, Terri L","Pref Name":"","Reason":"LimitedEx","Time":"9:30 AM"},{"Amount":"$334.00","Chart #":"008760","Mobile Phone":"(513)693-7693","Name":"Love, Ylonda A","Pref Name":"","Reason":"PMEVw/CH","Time":"3:00 PM"}] 
+
+C:\Schedules>getPatientInfo.exe "Test, Test"
+{"dob":"02/26/1952","patient":"Test, Test","phone":"(513)868-8997"}
