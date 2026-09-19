@@ -7,228 +7,243 @@ import com.crm.entites.Appointment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;                        
-import java.io.File;                             
-import java.nio.file.*;
 import java.time.*;
-import java.time.format.DateTimeFormatter;       
+import java.time.format.DateTimeFormatter;        
 
 
 @Component
 public class AppointmentSync {
-	
-	
-	private UserRepo userRepo;
-	private AppointmentRepo appointmentRepo;
-	private int daysAhead = 30;	
+    
+    private UserRepo userRepo;
+    private AppointmentRepo appointmentRepo;
+    private int daysAhead = 30;    
 
-	private String formatPhoneNumber(String phone) {
-		if (phone == null || phone.isBlank()) {
-		    return "";
-		}
+    private String formatPhoneNumber(String phone) {
+        if (phone == null || phone.isBlank()) {
+            return "";
+        }
 
-		// Strip all non-digit characters (e.g. spaces, parentheses, hyphens)
-		String digits = phone.replaceAll("\\D", "");
+        // Strip all non-digit characters (e.g. spaces, parentheses, hyphens)
+        String digits = phone.replaceAll("\\D", "");
 
-		// If it's a standard 10-digit US number, prepend country code +1
-		if (digits.length() == 10) {
-		    return "+1" + digits;
-		}
-		
-		// If it already includes the 1 country code (11 digits starting with 1)
-		if (digits.length() == 11 && digits.startsWith("1")) {
-		    return "+" + digits;
-		}
+        // If it's a standard 10-digit US number, prepend country code +1
+        if (digits.length() == 10) {
+            return "+1" + digits;
+        }
+        
+        // If it already includes the 1 country code (11 digits starting with 1)
+        if (digits.length() == 11 && digits.startsWith("1")) {
+            return "+" + digits;
+        }
 
-		// Fallback: return formatted digits with + if non-standard length
-		return "+" + digits;
-	}
+        // Fallback: return formatted digits with + if non-standard length
+        return "+" + digits;
+    }
 
-	private void parseJsonToDb(String jsonData, LocalDate currentDate) {
+    private void parseJsonToDb(String jsonData, LocalDate currentDate) {
 
-		ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = new ObjectMapper();
 
-		try {
+    try {
+        // Parse the new JSON structure: {"schedule": [ { ... }, { ... } ]}
+        JsonNode rootNode = mapper.readTree(jsonData);
+        JsonNode scheduleNode = rootNode.get("schedule");
 
-		    List<Map<String, String>> rows = mapper.readValue(
-		            jsonData,
-		            new TypeReference<List<Map<String, String>>>() {}
-		    );
+        List<Map<String, String>> rows = mapper.readValue(
+                scheduleNode.traverse(),
+                new TypeReference<List<Map<String, String>>>() {}
+        );
 
-		    for (Map<String, String> row : rows) {
+        for (Map<String, String> row : rows) {
 
-		        System.out.println("[AppointmentSync] Row data: " + row);
+            System.out.println("[AppointmentSync] Row data: " + row);
 
-				String chart = row.get("Chart #");
+            String chart = row.get("Chart #");
 
-				if (chart == null || chart.isBlank()) {
-					System.out.println("[AppointmentSync] Skipping blank row");
-					continue;
-				}
+            if (chart == null || chart.isBlank()) {
+                System.out.println("[AppointmentSync] Skipping blank row");
+                continue;
+            }
 
-				long userId = Long.parseLong(chart);
+            long userId = Long.parseLong(chart);
 
-		        Optional<User> user = userRepo.findById(userId);
+            Optional<User> user = userRepo.findById(userId);
 
-		        if (!user.isPresent()) {
+            if (!user.isPresent()) {
 
-		            System.out.println("[AppointmentSync] Adding user '"
-		                    + row.get("Name")
-		                    + "' to database");
+                String fullName = row.get("Name");
+                System.out.println("[AppointmentSync] Adding user '" + fullName + "' to database");
 
-		            User newUser = new User();
+                User newUser = new User();
+                newUser.setId(userId);
 
-		            newUser.setId(userId);
-		            newUser.setName(row.get("Name"));
-		            newUser.setPrefName(row.get("Pref Name"));
+                // Parse "Last, First" into firstName and lastName safely
+                if (fullName != null && fullName.contains(",")) {
+                    String[] parts = fullName.split(",", 2);
+                    newUser.setLastName(parts[0].trim());
+                    newUser.setFirstName(parts[1].trim());
+                } else if (fullName != null) {
+                    newUser.setLastName(fullName.trim());
+                    newUser.setFirstName("");
+                }
 
-		            // Convert (xxx) xxx-xxxx -> +1xxxxxxxxxx
-		            String rawPhone = row.get("Mobile Phone");
-		            newUser.setPhone(formatPhoneNumber(rawPhone));
+                newUser.setPrefName(row.get("Pref Name"));
 
-		            userRepo.save(newUser);
-		        }
+                // Convert (xxx) xxx-xxxx -> +1xxxxxxxxxx
+                String rawPhone = row.get("Mobile Phone");
+                newUser.setPhone(formatPhoneNumber(rawPhone));
 
-		        LocalTime localTime = LocalTime.parse(
-		                row.get("Time"),
-		                DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
-		        );
+                userRepo.save(newUser);
+            }
 
-		        Instant timeInstant = LocalDateTime
-		                .of(currentDate, localTime)
-		                .atZone(ZoneId.systemDefault())
-		                .toInstant();
+            LocalTime localTime = LocalTime.parse(
+                    row.get("Time"),
+                    DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+            );
 
-		        Optional<Appointment> existingAppointment =
-		                appointmentRepo.findByUserIdAndTime(userId, timeInstant);
+            Instant timeInstant = LocalDateTime
+                    .of(currentDate, localTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant();
 
-		        if (!existingAppointment.isPresent()) {
+            Optional<Appointment> existingAppointment =
+                    appointmentRepo.findByUserIdAndTime(userId, timeInstant);
 
-		            System.out.println("[AppointmentSync] Adding appointment"
-		                    + "\n\tfor user '" + row.get("Name") + "'"
-		                    + "\n\tat time '" + row.get("Time") + "'"
-		                    + "\n\tfor reason '" + row.get("Reason") + "'"
-		            );
+            if (!existingAppointment.isPresent()) {
 
-		            Appointment newAppointment = new Appointment();
+                System.out.println("[AppointmentSync] Adding appointment"
+                        + "\n\tfor user '" + row.get("Name") + "'"
+                        + "\n\tat time '" + row.get("Time") + "'"
+                        + "\n\tfor reason '" + row.get("Reason") + "'"
+                );
 
-		            newAppointment.setUserId(userId);
-		            newAppointment.setTime(timeInstant);
-		            newAppointment.setReason(row.get("Reason"));
-		            newAppointment.setJsonStatus(true);
+                Appointment newAppointment = new Appointment();
 
-		            appointmentRepo.save(newAppointment);
-		        }
-		    }
+                newAppointment.setUserId(userId);
+                newAppointment.setTime(timeInstant);
+                newAppointment.setReason(row.get("Reason"));
+                newAppointment.setJsonStatus(true);
 
-		    // Remove appointments that no longer exist in the JSON
+                appointmentRepo.save(newAppointment);
+            }
+        }
 
-		    List<Appointment> appointments = appointmentRepo.findByDay(currentDate);
+        // Remove appointments that no longer exist in the JSON
 
-		    for (Appointment dbAppointment : appointments) {
+        List<Appointment> appointments = appointmentRepo.findByDay(currentDate);
 
-		        if (!dbAppointment.fromJson())
-		            continue;
+        for (Appointment dbAppointment : appointments) {
 
-		        boolean found = false;
+            if (!dbAppointment.fromJson())
+                continue;
 
-		        for (Map<String, String> row : rows) {
+            boolean found = false;
 
-		            long userId = Long.parseLong(row.get("Chart #"));
+            for (Map<String, String> row : rows) {
 
-		            LocalTime localTime = LocalTime.parse(
-		                    row.get("Time"),
-		                    DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
-		            );
+                long userId = Long.parseLong(row.get("Chart #"));
 
-		            Instant timeInstant = LocalDateTime
-		                    .of(currentDate, localTime)
-		                    .atZone(ZoneId.systemDefault())
-		                    .toInstant();
+                LocalTime localTime = LocalTime.parse(
+                        row.get("Time"),
+                        DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+                );
 
-		            if (dbAppointment.getUserId() == userId
-		                    && dbAppointment.getTime().equals(timeInstant)
-		                    && dbAppointment.getReason().equals(row.get("Reason"))) {
+                Instant timeInstant = LocalDateTime
+                        .of(currentDate, localTime)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant();
 
-		                found = true;
-		                break;
-		            }
-		        }
+                if (dbAppointment.getUserId() == userId
+                        && dbAppointment.getTime().equals(timeInstant)
+                        && dbAppointment.getReason().equals(row.get("Reason"))) {
 
-		        if (!found) {
+                    found = true;
+                    break;
+                }
+            }
 
-		            System.out.println("[AppointmentSync] Removing cancelled appointment for user "
-		                    + dbAppointment.getUserId());
+            if (!found) {
 
-		            appointmentRepo.delete(dbAppointment);
+                System.out.println("[AppointmentSync] Removing cancelled appointment for user "
+                        + dbAppointment.getUserId());
 
-		        }
-		    }
+                appointmentRepo.delete(dbAppointment);
 
-		} catch (Exception e) {
+            }
+        }
 
-		    System.out.println("[AppointmentSync] Error parsing schedule JSON");
+    } catch (Exception e) {
 
-		    e.printStackTrace();
+        System.out.println("[AppointmentSync] Error parsing schedule JSON");
 
-		}
-	}
+        e.printStackTrace();
 
-	public AppointmentSync(UserRepo userRepo, AppointmentRepo appointmentRepo) {
+    }
+}
 
-		this.userRepo = userRepo;
-		this.appointmentRepo = appointmentRepo;
-			
-		new Thread(() -> {
-			System.out.println("[AppointmentSync] Starting Dentrix schedule sync");
-			
-			while (true) {
-				try {Thread.sleep(5000);} catch (Exception e) {
-					System.out.println("[AppointmentSync] Sleep error, " + e);					
-				}
-				
-				for (int i = 0; i < daysAhead; i++) {
-					LocalDate currentDate = LocalDate.now().plusDays(i);
-					String currentDateFormatted = currentDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
-					System.out.println("[AppointmentSync] Getting schedule for " + currentDateFormatted + ", which is " + i + " day(s) ahead of today");
-					try {Thread.sleep(1000);} catch (Exception e) {
-						System.out.println("[AppointmentSync] Sleep error, " + e);					
-					}
-					
-					DentrixAction.ReturnData getScheduleAction = DentrixAction.run("getSchedule", currentDateFormatted);
-					int returnCode = getScheduleAction.returnCode;
-					
+    public AppointmentSync(UserRepo userRepo, AppointmentRepo appointmentRepo) {
 
-					if (returnCode == -1) {
-						System.out.println("[AppointmentSync] DentrixAction ran into an issue, " + getScheduleAction.stderr);			
+        this.userRepo = userRepo;
+        this.appointmentRepo = appointmentRepo;
+            
+        new Thread(() -> {
+            System.out.println("[AppointmentSync] Starting Dentrix schedule sync");
+            
+            while (true) {
+                try {Thread.sleep(5000);} catch (Exception e) {
+                    System.out.println("[AppointmentSync] Sleep error, " + e);                    
+                }
+                
+                for (int i = 0; i < daysAhead; i++) {
+                    LocalDate currentDate = LocalDate.now().plusDays(i);
+                    String currentDateFormatted = currentDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+                    System.out.println("[AppointmentSync] Getting schedule for " + currentDateFormatted + ", which is " + i + " day(s) ahead of today");
+                    try {Thread.sleep(1000);} catch (Exception e) {
+                        System.out.println("[AppointmentSync] Sleep error, " + e);                    
+                    }
+                    
+                    // Fixed: called getDayOfMonth() and getYear() on currentDate, and used String values to fit Map<String, String>
+                    DentrixAction.ReturnData getScheduleAction = DentrixAction.run(
+                        "getSchedule", 
+                        Map.of(
+                            "month", String.valueOf(currentDate.getMonthValue()), 
+                            "day", String.valueOf(currentDate.getDayOfMonth()), 
+                            "year", String.valueOf(currentDate.getYear())
+                        )
+                    );
+                    int returnCode = getScheduleAction.returnCode;
+                    
 
-					} else if (returnCode == 0) {
-						
-						if (!getScheduleAction.stdout.equals("")) {
-							System.out.println("[AppointmentSync] Parsing getSchedule stdout");
-							parseJsonToDb(getScheduleAction.stdout, currentDate);
-						} else {
-							System.out.println("[AppointmentSync].Error For some reason getSchedule helper didnt send stdout data even though it returned 0");
-						}
-					} else if (returnCode == 10) {
-						System.out.println("[AppointmentSync] It seems as the day, '" + currentDate.toString() + "' has no active schedule");
-					} else {
-						System.out.println("[AppointmentSync].Error getSchedule failed with code " + returnCode);				
-					}
-					
-				}
-							
-			}
-		}).start();
-		
-	}
+                    if (returnCode == -1) {
+                        System.out.println("[AppointmentSync] DentrixAction ran into an issue, " + getScheduleAction.stderr);            
+
+                    } else if (returnCode == 0) {
+                        
+                        if (!getScheduleAction.stdout.equals("")) {
+                            System.out.println("[AppointmentSync] Parsing getSchedule stdout");
+                            parseJsonToDb(getScheduleAction.stdout, currentDate);
+                        } else {
+                            System.out.println("[AppointmentSync].Error For some reason getSchedule helper didnt send stdout data even though it returned 0");
+                        }
+                    } else if (returnCode == 10) {
+                        System.out.println("[AppointmentSync] It seems as the day, '" + currentDate.toString() + "' has no active schedule");
+                    } else {
+                        System.out.println("[AppointmentSync].Error getSchedule failed with code " + returnCode);                
+                    }
+                    
+                }
+                            
+            }
+        }).start();
+        
+    }
 
 }

@@ -1,0 +1,44 @@
+package com.crm.entites;
+
+import com.crm.embeds.ReplyObject;
+
+import jakarta.validation.constraints.*;
+import jakarta.persistence.*;
+
+import java.util.List;
+
+
+@Entity
+@Table(name = "most_recent_replies") // Maps this class to the "users" table in Postgres
+public class MostRecentReplies {
+	
+	@Id
+	public String number;
+	
+	@ElementCollection(fetch = FetchType.EAGER)
+	public List<ReplyObject> replyList;
+	
+	public MostRecentReplies() {
+	}	
+	
+	public MostRecentReplies(String number, String firstTag, String firstReply) {
+		this.number = number;	
+		replyList.add(new ReplyObject(firstTag, firstReply));
+	}
+	
+	public List<ReplyObject> getReplyList() {	
+		return this.replyList;		
+	}		
+	
+	public void setTagReply(String tag, String reply) {		
+		for(int i = 0; i < replyList.size(); i++) {
+			if (replyList.get(i).tag.equals(tag)) {
+				replyList.get(i).reply = reply;	
+				return;
+			}
+		}
+		replyList.add(new ReplyObject(tag, reply));
+	}
+	
+	
+}

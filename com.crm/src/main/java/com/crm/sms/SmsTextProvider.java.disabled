@@ -1,0 +1,370 @@
+package com.crm;
+
+import com.crm.entites.SmsJob;
+import com.crm.entites.ConsumedSms;
+import com.crm.repos.SmsJobRepo;
+import com.crm.repos.ConsumedSmsRepo;
+import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.*;
+
+@Component
+public class SmsTextProvider {
+
+    private final SmsJobRepo smsJobRepoInstance;
+    private final ConsumedSmsRepo consumedSmsRepoInstance;
+
+    private static SmsJobRepo smsJobRepo;
+    private static ConsumedSmsRepo consumedSmsRepo;
+
+    private static final HTTPWrapper requests = new HTTPWrapper();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+    // Queue for holding text messages before they are processed/sent
+    private final BlockingQueue<QueueItem> messageQueue = new LinkedBlockingQueue<>();
+
+    // Map to keep track of pending futures associated with SmsJob IDs
+    private static final ConcurrentMap<Long, CompletableFuture<Long>> pendingFutures = new ConcurrentHashMap<>();
+
+    public SmsTextProvider(SmsJobRepo smsJobRepo, ConsumedSmsRepo consumedSmsRepo) {
+        this.smsJobRepoInstance = smsJobRepo;
+        this.consumedSmsRepoInstance = consumedSmsRepo;
+        
+        System.out.println("[SmsTextProvider] Starting text message phone wrapper");
+
+        // Schedule worker tasks safely
+        this.scheduler.scheduleWithFixedDelay(this::processJobs, 0, 2, TimeUnit.SECONDS);
+    }
+
+    @PostConstruct
+    private void initStaticReferences() {
+        smsJobRepo = this.smsJobRepoInstance;
+        consumedSmsRepo = this.consumedSmsRepoInstance;
+    }
+
+    private void processJobs() {
+        try {
+            if (!ConnectionLoop.connected()) {
+                return;
+            }
+
+            processQueueItems();
+            processOutboundSms();
+            processFailedJobs();
+        } catch (Exception e) {
+            System.out.println("[SmsTextProvider] Worker loop execution error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Data holder for items placed in the message queue.
+     */
+    public static class QueueItem {
+        private final String tag;
+        private final String number;
+        private final String text;
+
+        public QueueItem(String number, String text, String tag) {
+            this.tag = tag;
+            this.number = number;
+            this.text = text;
+        }
+
+        public String getTag() { return tag; }
+        public String getNumber() { return number; }
+        public String getText() { return text; }
+    }
+
+    private void processQueueItems() {
+        while (!messageQueue.isEmpty()) {
+            QueueItem item = messageQueue.poll();
+            if (item == null) {
+                break;
+            }
+
+            new Thread(() -> {
+                System.out.println("[SmsTextProvider] Processing queued text message - Tag: '" + item.getTag() + "', Number: " + item.getNumber());
+                sendSms(item.getNumber(), "Message from \"" + item.getTag() + "\":\n\"" + item.getText() + "\"");
+            }).start();
+        }
+    }
+
+    public static List<String> getSms(String number) {
+        String url = "http://" + ConnectionLoop.get_ip() + ":" 
+                + ConnectionLoop.get_port() + "/sms_log";
+
+        Map<String, String> params = Map.of(
+                "number", number
+        );
+
+        return requests.get(url, params, List.class);
+    }
+
+    /**
+     * Works like a queue: fetches the most recent unconsumed SMS message for the phone number,
+     * marks it as "read" in the DB so it won't be returned again, and retains state across crashes.
+     */
+    public static TextMessage getMostRecentSms(String phoneNumber) {
+        String url = "http://" + ConnectionLoop.get_ip() + ":"
+                + ConnectionLoop.get_port()
+                + "/message_logs?number=" + URLEncoder.encode(phoneNumber, StandardCharsets.UTF_8);
+
+        List<Map<String, Object>> logs = requests.get(url, List.class);
+        if (logs == null || logs.isEmpty()) {
+            return null;
+        }
+
+        // Sort logs by time descending (most recent first)
+        logs.sort((a, b) -> {
+            Number timeA = (Number) a.get("time");
+            Number timeB = (Number) b.get("time");
+            long tA = timeA != null ? timeA.longValue() : 0L;
+            long tB = timeB != null ? timeB.longValue() : 0L;
+            return Long.compare(tB, tA);
+        });
+
+        for (Map<String, Object> log : logs) {
+            String type = (String) log.get("type");
+            String direction = (String) log.get("direction");
+
+            if ("sms".equalsIgnoreCase(type) && "incoming".equalsIgnoreCase(direction)) {
+                Number rawTime = (Number) log.get("time");
+                long msgTime = rawTime != null ? rawTime.longValue() : 0L;
+                String msgText = String.valueOf(log.get("message"));
+
+                // Check if this message has already been consumed/read (persisted in DB)
+                boolean alreadyConsumed = consumedSmsRepo.existsByPhoneNumberAndMessageTimeAndMessageText(
+                    phoneNumber, msgTime, msgText
+                );
+
+                if (!alreadyConsumed) {
+                    // Mark as consumed/read in DB for crash retention
+                    consumedSmsRepo.save(new ConsumedSms(phoneNumber, msgTime, msgText));
+                    return new TextMessage(msgText, msgTime);
+                }
+            }
+        }
+
+        return null; // No unread messages left in the queue
+    }
+
+    public static CompletableFuture<Long> sendSms(String number) {
+        return sendSms(number, "");
+    }
+
+    public static CompletableFuture<Long> sendSms(String recipient, String text) {
+        SmsJob job = new SmsJob(recipient, text);
+        job = smsJobRepo.save(job);
+        
+        CompletableFuture<Long> future = new CompletableFuture<>();
+        pendingFutures.put(job.getId(), future);
+        
+        return future;
+    }
+
+    /**
+     * Private helper responsible for actually sending the /send_sms request.
+     */
+    private static Long sendRawSms(String number, String rawSmsMessage) {
+        Map<String, Object> payload = Map.of(
+            "to", number,
+            "text", rawSmsMessage,
+            "time", System.currentTimeMillis()
+        );
+
+        String url = "http://" + ConnectionLoop.get_ip() + ":" + ConnectionLoop.get_port() + "/send_sms";
+        Map<String, Object> response = requests.post(url, payload, Map.class);
+
+        if (response != null && !"failed".equalsIgnoreCase((String) response.get("status"))) {
+            Object jobIdObj = response.get("job");
+            if (jobIdObj instanceof Number) {
+                return ((Number) jobIdObj).longValue();
+            }
+        }
+        return null;
+    }
+
+    private static void processOutboundSms() {
+        List<SmsJob> pendingJobs = smsJobRepo.findByStatusOrderByCreatedAtAsc(SmsJob.Status.PENDING);
+
+        for (SmsJob currentJob : pendingJobs) {
+            if (!ConnectionLoop.connected()) {
+                break;
+            }
+
+            currentJob.setStatus(SmsJob.Status.PROCESSING);
+            smsJobRepo.save(currentJob);
+
+            new Thread(() -> {
+                Long externalJobId = sendRawSms(currentJob.getRecipient(), currentJob.getText());
+                CompletableFuture<Long> future = pendingFutures.remove(currentJob.getId());
+
+                if (externalJobId != null) {
+                    System.out.println("[SmsTextProvider] Text successfully sent, External ID: " + externalJobId);
+                    currentJob.setStatus(SmsJob.Status.SENT);
+                    currentJob.setSentAt(System.currentTimeMillis());
+
+                    if (future != null) {
+                        future.complete(externalJobId);
+                    }
+                } else {
+                    System.out.println("[SmsTextProvider] Phone failed to send text");
+                    currentJob.setStatus(SmsJob.Status.FAILED);
+
+                    if (future != null) {
+                        future.complete(null);
+                    }
+                }
+
+                smsJobRepo.save(currentJob);
+            }).start();
+        }
+    }
+
+    private static void processFailedJobs() {
+        if (!ConnectionLoop.connected()) {
+            return;
+        }
+
+        String baseUrl = "http://" + ConnectionLoop.get_ip() + ":" + ConnectionLoop.get_port();
+        List<Map<String, Object>> response = requests.get(baseUrl + "/failed_jobs", List.class);
+
+        if (response == null || response.isEmpty()) {
+            return;
+        }
+
+        for (Map<String, Object> failedJobMap : response) {
+            if (!ConnectionLoop.connected()) {
+                break;
+            }
+
+            Number jobIdNum = (Number) failedJobMap.get("id");
+            if (jobIdNum == null) {
+                continue;
+            }
+
+            long jobId = jobIdNum.longValue();
+            new Thread(() -> {
+                System.out.println("[SmsTextProvider] Requesting phone to retry job: " + jobId);
+
+                Map<String, Object> retryPayload = Map.of(
+                    "id", jobId,
+                    "time", System.currentTimeMillis()
+                );
+
+                Map<String, Object> retryResponse = requests.post(baseUrl + "/retry_job", retryPayload, Map.class);
+
+                if (retryResponse != null && !"failed".equalsIgnoreCase((String) retryResponse.get("status"))) {
+                    System.out.println("[SmsTextProvider] Phone successfully queued retry for job: " + jobId);
+                } else {
+                    System.out.println("[SmsTextProvider] Phone retry job request failed for job: " + jobId);
+                }
+            }).start();
+        }
+    }
+
+    public void sendText(String number, String textMessage, String tag) {
+        messageQueue.offer(new QueueItem(number, textMessage, tag));
+        System.out.println("[SmsTextProvider] Added text request to queue - Tag: '" + tag + "', Number: " + number);
+    }
+
+    public static SmsJob.Status getStatus(Long jobId) {
+        return smsJobRepo.findById(jobId)
+                .map(SmsJob::getStatus)
+                .orElse(null);
+    }
+
+    public static class TextMessage {
+        private final String text;
+        private final Long time;
+
+        public TextMessage(String text, Long time) {
+            this.text = text;
+            this.time = time;
+        }
+
+        public String getText() { return text; }
+        public Long getTime() { return time; }
+    }
+
+    public static List<TextMessage> getResponses(Long jobId) {
+        Optional<SmsJob> targetJobOpt = smsJobRepo.findById(jobId);
+
+        if (targetJobOpt.isEmpty() || targetJobOpt.get().getSentAt() == null) {
+            return Collections.emptyList();
+        }
+
+        SmsJob targetJob = targetJobOpt.get();
+
+        List<SmsJob> responses = smsJobRepo.findByRecipientAndStatusAndSentAtGreaterThanOrderBySentAtAsc(
+            targetJob.getRecipient(),
+            SmsJob.Status.SENT,
+            targetJob.getSentAt()
+        );
+
+        List<TextMessage> messages = new ArrayList<>();
+        for (SmsJob response : responses) {
+            messages.add(new TextMessage(response.getText(), response.getSentAt()));
+        }
+
+        return messages;
+    }
+
+    public static List<TextMessage> getReplies(Long jobId) {
+        Optional<SmsJob> targetJobOpt = smsJobRepo.findById(jobId);
+        if (targetJobOpt.isEmpty() || targetJobOpt.get().getSentAt() == null) {
+            return Collections.emptyList();
+        }
+
+        SmsJob targetJob = targetJobOpt.get();
+        long startTime = targetJob.getSentAt();
+        String number = targetJob.getRecipient();
+
+        Optional<SmsJob> nextJob =
+            smsJobRepo.findFirstByRecipientAndStatusAndSentAtGreaterThanOrderBySentAtAsc(
+                number,
+                SmsJob.Status.SENT,
+                startTime
+            );
+
+        long endTime = nextJob.map(SmsJob::getSentAt).orElse(Long.MAX_VALUE);
+
+        String url = "http://" + ConnectionLoop.get_ip() + ":"
+                    + ConnectionLoop.get_port()
+                    + "/message_logs?number=" + URLEncoder.encode(number, StandardCharsets.UTF_8);
+
+        List<Map<String, Object>> logs = requests.get(url, List.class);
+        if (logs == null) {
+            return Collections.emptyList();
+        }
+
+        List<TextMessage> replies = new ArrayList<>();
+
+        for (Map<String, Object> log : logs) {
+            String type = (String) log.get("type");
+            String direction = (String) log.get("direction");
+
+            Number rawTime = (Number) log.get("time");
+            long msgTime = rawTime != null ? rawTime.longValue() : 0L;
+
+            if ("sms".equalsIgnoreCase(type)
+                    && "incoming".equalsIgnoreCase(direction)
+                    && msgTime >= startTime
+                    && msgTime < endTime) {
+
+                replies.add(new TextMessage(
+                    String.valueOf(log.get("message")),
+                    msgTime
+                ));
+            }
+        }
+
+        replies.sort(Comparator.comparingLong(TextMessage::getTime));
+
+        return replies;
+    }
+}

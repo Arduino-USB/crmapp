@@ -1,0 +1,53 @@
+package com.crm.sms;
+
+	
+public class ConversationController {
+	
+	private ConversationFlow currentConvo;	
+	private static List<Long> allConvoIds = new ArrayList<>();	
+	private SmsMessageType cursor;		 
+	private String tag;
+	private String number;
+
+	private void incomingWaiting() {
+		List<String> smsReplies = SmsTextProvider.getMostRecentSms();
+		if (!smsReplies.size() > 0) {
+			System.out.println("[ConversationController] User did not reply");
+		}
+	}
+	
+	
+	public static void deRegisterConvo(Long id) {
+		allConvoIds.removeAll(id);
+	}
+
+	public static boolean isConvoRegistered(Long id) {
+		return allConvoIds.contains(id);
+	}
+
+
+	public ConversationController(ConversationFlow currentConvo) {
+		this.currentConvo = currentConvo;
+		this.number = currentConvo.getNumber();
+		this.tag = currentConvo.getTag();
+		this.allConvoIds.add(currentConvo.getId());
+
+		System.out.println("[ConversationController] Starting session for: ('" + number + "', '" + tag+ "')");
+
+		new Thread(() -> {
+			while(true) {
+
+				try {Thread.sleep(5000);} catch (Exception e) {
+					System.out.println("[ConversationController] Sleep errer, " + e); 			
+				}				
+						
+				currentConvo = 
+
+				if (currentConvo.getCursor() == SmsMessageType.INCOMING_RECIEVED_WAITING) {
+					incomingWaiting();
+				}	
+			}
+
+		}).start();
+	}
+}	

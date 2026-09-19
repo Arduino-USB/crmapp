@@ -1,0 +1,122 @@
+package com.crm.controllers;
+
+import com.crm.TextMgr;
+import com.crm.entites.Appointment;
+import com.crm.entites.SmsLog;
+import com.crm.entites.User;
+import com.crm.repos.AppointmentRepo;
+import com.crm.repos.SmsLogRepo;
+import com.crm.repos.UserRepo;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/manual_text")
+public class ManualTextController {
+
+    private final TextMgr textMgr;
+    private final SmsLogRepo smsLogRepo;
+    private final UserRepo userRepo;
+    private final AppointmentRepo appointmentRepo;
+    private static final String TAG = "manualsms";
+
+    public ManualTextController(
+            TextMgr textMgr,
+            SmsLogRepo smsLogRepo,
+            UserRepo userRepo,
+            AppointmentRepo appointmentRepo
+    ) {
+        this.textMgr = textMgr;
+        this.smsLogRepo = smsLogRepo;
+        this.userRepo = userRepo;
+        this.appointmentRepo = appointmentRepo;
+    }
+
+    @PostMapping("/send_to_user")
+    public ResponseEntity<String> sendTextToUser(
+            @RequestParam Long userId,
+            @RequestParam String message
+    ) {
+        Optional<User> userOpt = userRepo.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found with ID: " + userId);
+        }
+
+        User user = userOpt.get();
+        if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("User has no phone number configured.");
+        }
+
+        // Updated TextMgr method signature: sendText(tag, recipient, text)
+        Long textId = textMgr.sendText(TAG, user.getPhone(), message);
+
+        smsLogRepo.save(new SmsLog(
+                null,
+                user.getId(),
+                user.getPhone(),
+                "OUTBOUND",
+                message,
+                textId,
+                TAG
+        ));
+
+        return ResponseEntity.ok("Text sent successfully to user. External Text ID: " + textId);
+    }
+
+    @PostMapping("/send_to_appointment")
+    public ResponseEntity<String> sendTextToAppointment(
+            @RequestParam Long appointmentId,
+            @RequestParam String message
+    ) {
+        Optional<Appointment> apptOpt = appointmentRepo.findById(appointmentId);
+        if (apptOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("Appointment not found with ID: " + appointmentId);
+        }
+
+        Appointment appointment = apptOpt.get();
+        Optional<User> userOpt = userRepo.findById(appointment.getUserId());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found for Appointment ID: " + appointmentId);
+        }
+
+        User user = userOpt.get();
+        if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Associated user has no phone number configured.");
+        }
+
+        // Updated TextMgr method signature: sendText(tag, recipient, text)
+        Long textId = textMgr.sendText(TAG, user.getPhone(), message);
+
+        smsLogRepo.save(new SmsLog(
+                appointment.getId(),
+                user.getId(),
+                user.getPhone(),
+                "OUTBOUND",
+                message,
+                textId,
+                TAG
+        ));
+
+        return ResponseEntity.ok("Text sent successfully to appointment. External Text ID: " + textId);
+    }
+
+    @GetMapping("/logs_by_user")
+    public ResponseEntity<List<SmsLog>> getLogsByUser(@RequestParam Long userId) {
+        return ResponseEntity.ok(smsLogRepo.findByUserIdAndTagOrderByTimestampAsc(userId, TAG));
+    }
+
+    @GetMapping("/logs_by_appointment")
+    public ResponseEntity<List<SmsLog>> getLogsByAppointment(@RequestParam Long appointmentId) {
+        return ResponseEntity.ok(smsLogRepo.findByAppointmentIdAndTagOrderByTimestampAsc(appointmentId, TAG));
+    }
+
+    @GetMapping("/replies")
+    public ResponseEntity<List<String>> getReplies(@RequestParam(required = false) String tag) {
+        // Updated TextMgr getReplies method signature which accepts a tag string and returns List<String>
+        String targetTag = (tag != null && !tag.trim().isEmpty()) ? tag : TAG;
+        return ResponseEntity.ok(textMgr.getReplies(targetTag));
+    }
+}

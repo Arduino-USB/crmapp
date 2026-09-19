@@ -1,0 +1,1191 @@
+[
+  {
+    "Action$Navigate": {
+      "url": "https://www.dentalofficetoolkit.com/dot-ui/login"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "label:has-text('Username')"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "input[autocomplete='username']"
+    }
+  },
+  {
+    "Action$FillVar": {
+      "selector": "input[autocomplete='username']",
+      "varName": "username"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "input[value='Next']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "input[type='password']"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "input[type='password']"
+    }
+  },
+
+  {
+    "Action$FillVar": {
+      "selector": "input[type='password']",
+      "varName": "password"
+    }
+  },
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[value='Verify']"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "input[value='Verify']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='authenticator-row']:has-text('Email') a[data-se='button']",
+      "timeout" : 5000
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "div[class*='authenticator-row']:has-text('Email') a[data-se='button']",
+      "ifAction": {
+        "Action$Click": {
+          "selector": "div[class*='authenticator-row']:has-text('Email') a[data-se='button']"
+        }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[value='Send me an email']"
+    }
+  },
+
+
+  {
+    "Action$Click": {
+      "selector": "input[value='Send me an email']"
+    }
+  },
+
+
+  {
+    "Action$GetEmail": {
+      "fromEmail" : "no-reply@authmail.deltadentalins.com",
+      "selector" : "b",
+      "nth" : 0,
+      "varName" : "emailCode"
+    }
+  },
+
+
+  {
+    "Action$FillVar": {
+      "selector": "input[name='credentials.passcode']",
+      "varName" : "emailCode"
+    }
+  },
+
+  {
+    "Action$Wait": {
+      "timeout": 500
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[value='Verify']"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "input[value='Verify']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "button[class*='change-member']"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "button[class*='change-member']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='memberId']"
+    }
+  },
+
+  {
+    "Action$FillVar": {
+      "selector": "input[id='memberId']",
+      "varName": "ptMemberId"
+    }
+  },
+  {
+    "Action$FillVar": {
+      "selector": "input[id='dob']",
+      "varName": "ptDob"
+    }
+  },
+  {
+    "Action$FillVar": {
+      "selector": "input[id='first-name']",
+      "varName": "ptFirstName"
+    }
+  },
+  {
+    "Action$FillVar": {
+      "selector": "input[id='last-name']",
+      "varName": "ptLastName"
+    }
+  },
+
+
+
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button member-search']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "select[id='patient-name']"
+    }
+  },
+
+  {
+    "Action$SelectVar": {
+      "selector": "select[id='patient-name']",
+      "optionVarName": "ptFirstName"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "span:has-text('Member')"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "a:has-text('Member Details & Benefits')"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[class='page-content'] div[class*='dropdown-section']",
+      "atLeast" : 8
+    }
+  }, 
+
+
+  {
+    "Action$Click": {
+      "selector": "div[class='page-content'] div[class*='dropdown-section']"
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "section[class='mb-0'] table[class='table2'] tr[class='highLight'] td",
+      "stringName": "effectiveDate",
+      "nth": 4
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printcbi'] p:has(> span[class='bold']:text-is('Group Number:')) span[class='bld']",
+      "stringName": "groupNumber"
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printcbi'] p:has(> span[class='bold']:has-text('Payor ID')) span[class='bld']",
+      "stringName": "payorId"
+    }
+  },
+
+  
+
+  {
+    "Action$WaitFor": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Maximum')) span[class='bld']"
+    }
+  },
+
+
+  {
+    "Action$StoreString": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Maximum')) span[class='bld']",
+      "stringName": "maxiumBalance",
+      "nth": 0
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Maximum')) span[class='bld']",
+      "stringName": "remainingBalance",
+      "nth": 2
+    }
+  },
+
+  
+
+  {
+    "Action$WaitFor": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Deductible')) span[class='bld']"
+    }
+  },
+
+
+  {
+    "Action$StoreString": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Deductible')) span[class='bld']",
+      "stringName": "maxiumDeductible",
+      "nth": 0
+    }
+  },
+
+  {
+    "Action$StoreString": {
+      "selector": "tr[class='top-align']:has(> td:has-text('General')):has(> td:has-text('Deductible')) span[class='bld']",
+      "stringName": "remainingDeductible",
+      "nth": 2
+    }
+  },
+
+  {
+    "Action$RawStoreString": {
+      "stringName": "inNetwork",
+      "value" : "Yes"
+    }
+  },
+
+  
+
+
+  {
+    "Action$Conditional": {
+      "selector": "*:has-text('12/31')",
+      "ifAction": {
+        "Action$RawStoreString": {
+          "stringName": "calendarYear",
+          "value": "Yes"
+        }
+      },
+      "elseAction": {
+        "Action$RawStoreString": {
+          "stringName": "calendarYear",
+          "value": "No"
+        }
+      }
+    }
+  },
+
+
+
+  {
+    "Action$Click": {
+      "selector": "input[class*='input-header-search']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D4341,D4342,D4346,D4910,D4355,D0180"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+
+
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap1"
+    }
+  },
+
+
+
+  {
+    "Action$Click": {
+      "selector": "input[class*='input-header-search']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D9310,D1110,D0274,D0210,D0330"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap2"
+    }
+  },
+
+  {
+    "Action$Click": {
+      "selector": "input[class*='input-header-search']"
+    }
+  },
+
+
+
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D4249,D4260,D4261,D4263,D4265,D4266,D4267"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap3"
+    }
+  },
+  
+
+
+
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D4270,D4273,D4275,D4277,D6010,D6100,D6104"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap4"
+    }
+  },
+
+  
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D6106,D6107,D7140,D7210,D7230,D7240,D7250"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap5"
+    }
+  },
+
+
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D7286,D7310,D7311,D7320,D7471,D7472,D7473"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap6"
+    }
+  },
+
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D7951,D7953,D7957,D7956,D7961,D7961,D7962"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap7"
+    }
+  },
+
+  {
+    "Action$FillNormal": {
+      "selector": "input[class*='input-header-search']",
+      "text": "D9230,D9239,D9243,D9612"
+    }
+  },
+  {
+    "Action$Click": {
+      "selector": "button[class*='button-header-search']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[class*='codes-search-section'] div[class='col-md-5 level3']"
+    }
+  },
+  {
+    "Action$StoreMap": {
+      "keySelector": "div[class*='codes-search-section'] div[class='col-md-5 level3']",
+      "valueSelector": "div[class*='codes-search-section']:has(div[class='col-md-5 level3']) span",
+      "mapName": "dentalCodesMap8"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Diagnostic')) li",
+      "atLeast": 1
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Diagnostic')) li",
+      "nth": 0,
+      "stringName": "freqD0180,D9310"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Preventive')) li",
+      "atLeast": 3
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Preventive')) li",
+      "nth": 2,
+      "stringName": "freqD1110,D4910"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Periodontics')) li",
+      "atLeast": 2
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Periodontics')) li",
+      "nth": 1,
+      "stringName": "freqD4341,D4342"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Bitewing Radiographs')) li",
+      "atLeast": 1
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('Bitewing Radiographs')) li",
+      "nth": 0,
+      "stringName": "freqD0274"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('All Other Radiographs')) li",
+      "atLeast": 1
+    }
+  },
+  {
+    "Action$StoreString": {
+      "selector": "div[id='printexcl'] table[class='table2'] tr:has(td:has-text('All Other Radiographs')) li",
+      "nth": 0,
+      "stringName": "freqD0210,D0330"
+    }
+  },
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "a:has-text('Family Claims History')"
+    }
+  },
+
+
+  {
+    "Action$Click": {
+      "selector": "a:has-text('Family Claims History')"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "select[id='date-range-select']"
+    }
+  },
+
+  {
+    "Action$SelectNormal": {
+      "selector": "select[id='date-range-select']",
+      "optionString": "All Time"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "li[class='radio-row']:has(span:has-text('With treatment(s) matching the following')) input"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "li[class='radio-row']:has(span:has-text('With treatment(s) matching the following')) input"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='all-businesses']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='all-businesses']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "div[class='modal-footer']:has(label:has-text('Do not display this message again during this session')) input",
+      "timeout" : 10000
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "div[class='modal-footer']:has(label:has-text('Do not display this message again during this session')) input",
+      "ifAction": {
+        "Action$Click": {
+          "selector": "div[class='modal-footer']:has(label:has-text('Do not display this message again during this session')) input"
+        }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D4341,D4342"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD4341,D4342"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D4910"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD4910"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D4346"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD4346"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D4355"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD4355"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D0180"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD0180"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D1110"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD1110"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+  
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D9310"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD9310"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D0274"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD0274"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  },
+
+
+
+
+
+
+  {
+    "Action$WaitFor": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "input[id='procedure-codes']"
+    }
+  },
+  {
+    "Action$FillNormal": {
+      "selector": "input[id='procedure-codes']",
+      "text": "D0210,D0330"
+    }
+  },
+  
+  {
+    "Action$WaitFor": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+  
+  {
+    "Action$Click": {
+      "selector": "button[class='primary-button submit']"
+    }
+  },
+
+  {
+    "Action$WaitFor": {
+      "selector": "table[class='table1'] "
+    }
+  },
+
+  {
+    "Action$Conditional": {
+      "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+      "ifAction": {
+          "Action$StoreList": {
+            "selector": "table[class='table1'] tbody:has(tr:has-text('Paid')) td:nth-child(1)",
+            "listName" : "hxD0210,D0330"
+          }
+      },
+      "elseAction": {
+        "Action$Wait": {
+          "timeout": 100
+        }
+      }
+    }
+  }
+
+
+
+]
