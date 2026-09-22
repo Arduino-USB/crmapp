@@ -78,7 +78,7 @@ public class CompleteUserSync {
                     System.out.println("[CompleteUserSync] Sleep error, " + e);
                 }
 
-                List<User> users = userRepo.findUsersPhoneBlank();
+                List<User> users = userRepo.findUsersIncompleteData();
                 for (int i = 0; i < users.size(); i++) {
                     User currentUser = users.get(i);
                     
@@ -99,6 +99,8 @@ public class CompleteUserSync {
                         System.out.println("[CompleteUserSync] getPatientData returned a non 0 status code");
                         continue;
                     }
+
+					System.out.println("[CompleteUserSync] getPatientData returned : " + getPatientDataAction.stdout);
 
                     try {
                         ObjectMapper mapper = new ObjectMapper();

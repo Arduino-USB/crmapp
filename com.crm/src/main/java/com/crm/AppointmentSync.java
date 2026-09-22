@@ -85,15 +85,24 @@ public class AppointmentSync {
                 User newUser = new User();
                 newUser.setId(userId);
 
-                // Parse "Last, First" into firstName and lastName safely
-                if (fullName != null && fullName.contains(",")) {
-                    String[] parts = fullName.split(",", 2);
-                    newUser.setLastName(parts[0].trim());
-                    newUser.setFirstName(parts[1].trim());
-                } else if (fullName != null) {
-                    newUser.setLastName(fullName.trim());
-                    newUser.setFirstName("");
-                }
+				// Parse "Last, First" into firstName and lastName safely
+				if (fullName != null && fullName.contains(",")) {
+					String[] parts = fullName.split(",", 2);
+					
+					// Last name stays as is (e.g., "Pork")
+					newUser.setLastName(parts[0].trim());
+					
+					// Clean up first name to remove middle initials (e.g., "John D" -> "John")
+					String rawFirstName = parts[1].trim();
+					if (rawFirstName.contains(" ")) {
+						rawFirstName = rawFirstName.split("\\s+")[0];
+					}
+					newUser.setFirstName(rawFirstName);
+					
+				} else if (fullName != null) {
+					newUser.setLastName(fullName.trim());
+					newUser.setFirstName("");
+				}
 
                 newUser.setPrefName(row.get("Pref Name"));
 

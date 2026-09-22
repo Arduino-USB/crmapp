@@ -40,6 +40,16 @@ public class User {
 	private LocalDate dob;
 
 
+	private String primarySubFirstName;
+	private String primarySubLastName;
+	private LocalDate primarySubDob;
+	private Long primarySubMemberId;
+
+	private String secondarySubFirstName;
+	private String secondarySubLastName;
+	private LocalDate secondarySubDob;
+	private Long secondarySubMemberId;
+
 
     // Constructors
     public User() {
@@ -142,6 +152,71 @@ public class User {
     public void setPhone(String phone) { 
         this.phone = phone; 
     }
+
+	public String getPrimarySubFirstName() {
+		return primarySubFirstName;
+	}
+
+	public void setPrimarySubFirstName(String primarySubFirstName) {
+		this.primarySubFirstName = primarySubFirstName;
+	}
+
+	public String getPrimarySubLastName() {
+		return primarySubLastName;
+	}
+
+	public void setPrimarySubLastName(String primarySubLastName) {
+		this.primarySubLastName = primarySubLastName;
+	}
+
+	public LocalDate getPrimarySubDob() {
+		return primarySubDob;
+	}
+
+	public void setPrimarySubDob(LocalDate primarySubDob) {
+		this.primarySubDob = primarySubDob;
+	}
+
+	public Long getPrimarySubMemberId() {
+		return primarySubMemberId;
+	}
+
+	public void setPrimarySubMemberId(Long primarySubMemberId) {
+		this.primarySubMemberId = primarySubMemberId;
+	}
+
+
+	public String getSecondarySubFirstName() {
+		return secondarySubFirstName;
+	}
+
+	public void setSecondarySubFirstName(String secondarySubFirstName) {
+		this.secondarySubFirstName = secondarySubFirstName;
+	}
+
+	public String getSecondarySubLastName() {
+		return secondarySubLastName;
+	}
+
+	public void setSecondarySubLastName(String secondarySubLastName) {
+		this.secondarySubLastName = secondarySubLastName;
+	}
+
+	public LocalDate getSecondarySubDob() {
+		return secondarySubDob;
+	}
+
+	public void setSecondarySubDob(LocalDate secondarySubDob) {
+		this.secondarySubDob = secondarySubDob;
+	}
+
+	public Long getSecondarySubMemberId() {
+		return secondarySubMemberId;
+	}
+
+	public void setSecondarySubMemberId(Long secondarySubMemberId) {
+		this.secondarySubMemberId = secondarySubMemberId;
+	}
 
     public void setVar(String varName, String varContent) {
         for (int i = 0; i < varibles.size(); i++) {
