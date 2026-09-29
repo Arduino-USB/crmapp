@@ -19,7 +19,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;        
 
 
-@Component
+//@Component
 public class AppointmentSync {
     
     private UserRepo userRepo;

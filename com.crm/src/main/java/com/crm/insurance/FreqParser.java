@@ -1,4 +1,4 @@
-package com.crm.webscrape;
+package com.crm.insurance;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -143,6 +143,29 @@ public class FreqParser {
                 results.add(new Freq(count, buildPeriod(periodVal, unit)));
             }
         }
+
+
+		if (config.patterns.containsKey("benefitYear")) {
+			String rawRegex = String.format(config.patterns.get("benefitYear"), numPat);
+			Pattern pattern = Pattern.compile(rawRegex, Pattern.CASE_INSENSITIVE);
+			Matcher matcher = pattern.matcher(input);
+			while (matcher.find()) {
+				int count = parseNumber(matcher.group(1));
+				results.add(new Freq(count, Period.ofYears(1)));
+			}
+		}
+
+
+		if (config.patterns.containsKey("benefitPeriod")) {
+			String rawRegex = String.format(config.patterns.get("benefitPeriod"), numPat);
+			Pattern pattern = Pattern.compile(rawRegex, Pattern.CASE_INSENSITIVE);
+			Matcher matcher = pattern.matcher(input);
+			while (matcher.find()) {
+				int count = parseNumber(matcher.group(1));
+				results.add(new Freq(count, Period.ofYears(1)));
+			}
+		}
+
 
         // 4. General Frequency + Period Pattern
         if (config.patterns.containsKey("general")) {

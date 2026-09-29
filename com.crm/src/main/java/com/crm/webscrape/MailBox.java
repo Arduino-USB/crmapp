@@ -29,17 +29,41 @@ public class MailBox {
      * Constructor blocks until connection is established, folders are opened,
      * and baselines are fully initialized.
      */
-    public MailBox(String address, String port, String username, String password, List<String> targetFolders) {
-        this.address = address;
-        this.port = port;
-        this.username = username;
-        this.password = password;
-        this.cachedFolders = (targetFolders != null && !targetFolders.isEmpty()) ? targetFolders : List.of("INBOX");
+
+		
+	public static class MailBoxConfig {
+		
+		public MailBoxConfig(String address, String port, String username, String password, List<String> targetFolders) {
+		    this.address = address;
+		    this.port = port;
+		    this.username = username;
+		    this.password = password;
+		}	
+
+		public String username;
+		public String address;
+		public String port;
+		public String password;
+		public List<String> targetFolders;
+				
+	}
+
+
+    public MailBox(MailBoxConfig mailBoxConfig) {
+        this.address = mailBoxConfig.address;
+        this.port = mailBoxConfig.port;
+        this.username = mailBoxConfig.username;
+        this.password = mailBoxConfig.password;
+        this.cachedFolders = (mailBoxConfig.targetFolders != null && !mailBoxConfig.targetFolders.isEmpty()) ? mailBoxConfig.targetFolders : List.of("INBOX");
         
         // Fully initialize connection and baselines synchronously before returning
         connectStore();
         initializeAndStartListening();
     }
+
+	public String getUsername() {
+		return this.username;
+	}
 
     private synchronized void connectStore() {
         try {

@@ -9,8 +9,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.temporal.ChronoUnit;
+import java.time.Instant;
+
 import java.util.List;
 import java.util.Optional;
+
+import java.time.Instant;
 
 @Repository
 public interface UserRepo extends JpaRepository<User, Long> {
@@ -85,23 +90,44 @@ public interface UserRepo extends JpaRepository<User, Long> {
 	 * Finds users with complete patient DOB and at least
 	 * one complete insurance record.
 	 */
-	@Query("""
-		SELECT u
-		FROM User u
-		WHERE u.dob IS NOT NULL
-		  AND (
-				(
-					u.primaryInsuranceName IS NOT NULL
-					AND TRIM(u.primaryInsuranceName) != ''
-					AND u.primaryInsuranceId IS NOT NULL
-				)
-				OR
-				(
-					u.secondaryInsuranceName IS NOT NULL
-					AND TRIM(u.secondaryInsuranceName) != ''
-					AND u.secondaryInsuranceId IS NOT NULL
-				)
-		  )
-	""")
-	List<User> findUsersWithCompleteInsurance();
+@Query("""
+    SELECT DISTINCT u
+    FROM User u
+    LEFT JOIN u.primaryInsuranceFile pf
+    LEFT JOIN u.secondaryInsuranceFile sf
+    WHERE u.dob IS NOT NULL
+      AND (
+            (
+                u.primaryInsuranceName IS NOT NULL
+                AND TRIM(u.primaryInsuranceName) != ''
+                AND u.primaryInsuranceId IS NOT NULL
+                AND (
+                    pf IS NULL
+                    OR pf.lastUpdated IS NULL
+                    OR pf.lastUpdated < :insuranceCutoff
+                )
+            )
+            OR
+            (
+                u.secondaryInsuranceName IS NOT NULL
+                AND TRIM(u.secondaryInsuranceName) != ''
+                AND u.secondaryInsuranceId IS NOT NULL
+                AND (
+                    sf IS NULL
+                    OR sf.lastUpdated IS NULL
+                    OR sf.lastUpdated < :insuranceCutoff
+                )
+            )
+          )
+    """)
+List<User> findUsersWithExpiredInsurance(@Param("insuranceCutoff") Instant insuranceCutoff);
+
+	default List<User> findUsersWithExpiredInsurance() {
+		return findUsersWithExpiredInsurance(
+			Instant.now().minus(7, ChronoUnit.DAYS)
+		);
+	}
+
+	Optional<User> findByPrimaryInsuranceFileId(Long insuranceId);
+    Optional<User> findBySecondaryInsuranceFileId(Long insuranceId);
 }

@@ -3,9 +3,12 @@ package com.crm.webscrape;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
 
+import org.springframework.boot.system.ApplicationHome;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.nio.file.Path;
+import java.io.File;
 import java.lang.Class;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +27,7 @@ public class WebScrape {
     private Playwright playwright;
     private Map<String, String> runtimeStorage = new HashMap<>();
     private WebReturns webReturns = new WebReturns();
-    private static MailBox mailBox = new MailBox("imap.zoho.com", "993", "office@tabaaperio.com", "Windows.exe@exe1", List.of("Notification"));
+    private List<MailBox> mailboxes = new ArrayList<>();
 
     public WebScrape(Path jsonPath, Map<String, String> params) {
         System.out.println("[WebScrape] Starting scraper process...");
@@ -542,10 +545,62 @@ public class WebScrape {
     }
 
     private void getEmail(Action.GetEmail getEmailAc) {
-        System.out.println("[Action: GetEmail] Fetching email from: '" + getEmailAc.fromEmail + "' using selector: '" + getEmailAc.selector + "'");
-        String emailData = mailBox.getMessageData(getEmailAc.fromEmail, getEmailAc.selector, getEmailAc.nth);
+	
+		MailBox currentMailbox = null;	
+	
+		for (int i = 0; i < mailboxes.size(); i++) {		
+			if (mailboxes.get(i).getUsername().equals(getEmailAc.mailBox)) {
+				currentMailbox = mailboxes.get(i);
+			}
+		}
+		
+		if (currentMailbox == null) {
+			throw new IllegalStateException("[Action: ConnectMail]  Mailbox email address '" + getEmailAc.mailBox + "' not connected");
+		}
+
+
+        System.out.println("[Action: GetEmail] Fetching email in mailbox: " + currentMailbox.getUsername() + "from sender: '" + getEmailAc.fromEmail + "' using selector: '" + getEmailAc.selector + "'");
+        String emailData = currentMailbox.getMessageData(getEmailAc.fromEmail, getEmailAc.selector, getEmailAc.nth);
 
         System.out.println("[Action: GetEmail] Email data retrieved. Storing to runtime variable '" + getEmailAc.varName + "': '" + emailData + "'");
         runtimeStorage.put(getEmailAc.varName, emailData);
     }
+
+    private void connectToMailbox(Action.ConnectToMailBox connectMailAc) {
+        System.out.println("[Action: ConnectMail] Connecting to mailbox conf:  '" + connectMailAc.mailBox + "'");
+
+        ApplicationHome home = new ApplicationHome(WebScrape.class);
+        if (home.getSource() == null) {
+            throw new IllegalStateException(
+                    "[Action: ConnectMail]  Unable to locate application home source path."
+            );
+        }
+
+        
+		Path jarDir = home.getSource().toPath().getParent();
+		File mailBoxConfigFile = new File(jarDir.resolve("Mailboxes").resolve(connectMailAc.mailBox).toUri());	
+
+		if (mailBoxConfigFile.exists()) {
+			throw new IllegalStateException("[Action: ConnectMail] This mailbox configuration does not exist");
+		}
+
+		for (int i = 0; i < mailboxes.size(); i++) {
+			MailBox currentMailbox = mailboxes.get(i);			
+			if (currentMailbox.getUsername().equals(connectMailAc.mailBox)) {
+				throw new IllegalStateException("[Action: ConnectMail]  Mailbox is already connected");
+			}
+		}
+		
+		MailBox.MailBoxConfig mailBoxConfig;
+		try {
+		    mailBoxConfig = new ObjectMapper().readValue(mailBoxConfigFile, MailBox.MailBoxConfig.class);
+		} catch (java.io.IOException e) {
+		    throw new RuntimeException("[Action: ConnectMail] Failed to parse mailbox configuration file: " + e.getMessage(), e);
+		}
+
+
+    }
+
+
+//new MailBox("imap.zoho.com", "993", "office@tabaaperio.com", "Windows.exe@exe1", List.of("Notification"));
 }

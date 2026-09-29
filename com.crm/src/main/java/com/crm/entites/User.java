@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import java.time.LocalDate;
+
 @Entity
 @Table(name = "users") 
 public class User {
@@ -22,13 +23,13 @@ public class User {
     @NotBlank(message = "Last name cannot be empty")
     private String lastName;
 
-    private Long memberId;
+    private String memberId;
 
     private String primaryInsuranceName;
-    private Long primaryInsuranceId;
+    private String primaryInsuranceId;
 
     private String secondaryInsuranceName;
-    private Long secondaryInsuranceId;
+    private String secondaryInsuranceId;
 
     private String phone;
 
@@ -37,19 +38,24 @@ public class User {
     @ElementCollection(fetch = FetchType.EAGER)
     private List<Varible> varibles = new ArrayList<>();
 
-	private LocalDate dob;
+    private LocalDate dob;
 
+    private String primarySubFirstName;
+    private String primarySubLastName;
+    private LocalDate primarySubDob;
+    private String primarySubMemberId;
 
-	private String primarySubFirstName;
-	private String primarySubLastName;
-	private LocalDate primarySubDob;
-	private Long primarySubMemberId;
+    private String secondarySubFirstName;
+    private String secondarySubLastName;
+    private LocalDate secondarySubDob;
+    private String secondarySubMemberId;
 
-	private String secondarySubFirstName;
-	private String secondarySubLastName;
-	private LocalDate secondarySubDob;
-	private Long secondarySubMemberId;
+	@OneToOne
+	private Insurance primaryInsuranceFile;
 
+	@OneToOne
+	private Insurance secondaryInsuranceFile;
+	
 
     // Constructors
     public User() {
@@ -73,19 +79,19 @@ public class User {
         this.id = id; 
     }
 
-	public LocalDate getDob() {
-		return dob;
-	}
+    public LocalDate getDob() {
+        return dob;
+    }
 
-	public void setDob(LocalDate dob) {
-		this.dob = dob;
-	}
+    public void setDob(LocalDate dob) {
+        this.dob = dob;
+    }
 
-    public Long getMemberId() { 
+    public String getMemberId() { 
         return memberId; 
     }
 
-    public void setMemberId(Long memberId) {
+    public void setMemberId(String memberId) {
         this.memberId = memberId;
     }
 
@@ -97,11 +103,11 @@ public class User {
         this.primaryInsuranceName = primaryInsuranceName; 
     }
 
-    public Long getPrimaryInsuranceId() { 
+    public String getPrimaryInsuranceId() { 
         return primaryInsuranceId; 
     }
 
-    public void setPrimaryInsuranceId(Long primaryInsuranceId) { 
+    public void setPrimaryInsuranceId(String primaryInsuranceId) { 
         this.primaryInsuranceId = primaryInsuranceId; 
     }
 
@@ -113,11 +119,11 @@ public class User {
         this.secondaryInsuranceName = secondaryInsuranceName; 
     }
 
-    public Long getSecondaryInsuranceId() { 
+    public String getSecondaryInsuranceId() { 
         return secondaryInsuranceId; 
     }
 
-    public void setSecondaryInsuranceId(Long secondaryInsuranceId) { 
+    public void setSecondaryInsuranceId(String secondaryInsuranceId) { 
         this.secondaryInsuranceId = secondaryInsuranceId; 
     }
 
@@ -153,70 +159,86 @@ public class User {
         this.phone = phone; 
     }
 
-	public String getPrimarySubFirstName() {
-		return primarySubFirstName;
+    public String getPrimarySubFirstName() {
+        return primarySubFirstName;
+    }
+
+    public void setPrimarySubFirstName(String primarySubFirstName) {
+        this.primarySubFirstName = primarySubFirstName;
+    }
+
+    public String getPrimarySubLastName() {
+        return primarySubLastName;
+    }
+
+    public void setPrimarySubLastName(String primarySubLastName) {
+        this.primarySubLastName = primarySubLastName;
+    }
+
+    public LocalDate getPrimarySubDob() {
+        return primarySubDob;
+    }
+
+    public void setPrimarySubDob(LocalDate primarySubDob) {
+        this.primarySubDob = primarySubDob;
+    }
+
+    public String getPrimarySubMemberId() {
+        return primarySubMemberId;
+    }
+
+    public void setPrimarySubMemberId(String primarySubMemberId) {
+        this.primarySubMemberId = primarySubMemberId;
+    }
+
+    public String getSecondarySubFirstName() {
+        return secondarySubFirstName;
+    }
+
+    public void setSecondarySubFirstName(String secondarySubFirstName) {
+        this.secondarySubFirstName = secondarySubFirstName;
+    }
+
+    public String getSecondarySubLastName() {
+        return secondarySubLastName;
+    }
+
+    public void setSecondarySubLastName(String secondarySubLastName) {
+        this.secondarySubLastName = secondarySubLastName;
+    }
+
+    public LocalDate getSecondarySubDob() {
+        return secondarySubDob;
+    }
+
+    public void setSecondarySubDob(LocalDate secondarySubDob) {
+        this.secondarySubDob = secondarySubDob;
+    }
+
+    public String getSecondarySubMemberId() {
+        return secondarySubMemberId;
+    }
+
+    public void setSecondarySubMemberId(String secondarySubMemberId) {
+        this.secondarySubMemberId = secondarySubMemberId;
+    }
+
+	public Insurance getPrimaryInsuranceFile() {
+		return primaryInsuranceFile;
 	}
 
-	public void setPrimarySubFirstName(String primarySubFirstName) {
-		this.primarySubFirstName = primarySubFirstName;
+	public void setPrimaryInsuranceFile(Insurance primaryInsuranceFile) {
+		this.primaryInsuranceFile = primaryInsuranceFile;
 	}
 
-	public String getPrimarySubLastName() {
-		return primarySubLastName;
+	public Insurance getSecondaryInsuranceFile() {
+		return secondaryInsuranceFile;
 	}
 
-	public void setPrimarySubLastName(String primarySubLastName) {
-		this.primarySubLastName = primarySubLastName;
+	public void setSecondaryInsuranceFile(Insurance secondaryInsuranceFile) {
+		this.secondaryInsuranceFile = secondaryInsuranceFile;
 	}
 
-	public LocalDate getPrimarySubDob() {
-		return primarySubDob;
-	}
-
-	public void setPrimarySubDob(LocalDate primarySubDob) {
-		this.primarySubDob = primarySubDob;
-	}
-
-	public Long getPrimarySubMemberId() {
-		return primarySubMemberId;
-	}
-
-	public void setPrimarySubMemberId(Long primarySubMemberId) {
-		this.primarySubMemberId = primarySubMemberId;
-	}
-
-
-	public String getSecondarySubFirstName() {
-		return secondarySubFirstName;
-	}
-
-	public void setSecondarySubFirstName(String secondarySubFirstName) {
-		this.secondarySubFirstName = secondarySubFirstName;
-	}
-
-	public String getSecondarySubLastName() {
-		return secondarySubLastName;
-	}
-
-	public void setSecondarySubLastName(String secondarySubLastName) {
-		this.secondarySubLastName = secondarySubLastName;
-	}
-
-	public LocalDate getSecondarySubDob() {
-		return secondarySubDob;
-	}
-
-	public void setSecondarySubDob(LocalDate secondarySubDob) {
-		this.secondarySubDob = secondarySubDob;
-	}
-
-	public Long getSecondarySubMemberId() {
-		return secondarySubMemberId;
-	}
-
-	public void setSecondarySubMemberId(Long secondarySubMemberId) {
-		this.secondarySubMemberId = secondarySubMemberId;
-	}
 
     public void setVar(String varName, String varContent) {
         for (int i = 0; i < varibles.size(); i++) {

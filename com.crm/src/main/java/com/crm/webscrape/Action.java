@@ -126,11 +126,17 @@ public class Action {
 
     public static class GetEmail extends Action {
         public String fromEmail;
+		public String mailBox;
 
         public String selector;
         public Integer nth;
 
         public String varName;
+    }
+
+    public static class ConnectToMailBox extends Action {
+        public String mailBox;
+
     }
     
 

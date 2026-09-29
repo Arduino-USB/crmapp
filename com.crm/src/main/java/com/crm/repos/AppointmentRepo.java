@@ -23,7 +23,7 @@ public interface AppointmentRepo extends JpaRepository<Appointment, Long> {
     List<Appointment> findByTime(Instant time);
     
     Optional<Appointment> findByUserIdAndTime(long userId, Instant time);    
-    
+    Optional<Appointment> findFirstByUserIdOrderByTimeDesc(long userId);
     List<Appointment> findByTimeBetween(Instant start, Instant end);
 
     @Query("""
